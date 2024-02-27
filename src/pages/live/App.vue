@@ -1,7 +1,7 @@
 <template>
   <div id="custom-css" style="display: none"></div>
   <DanmakuItem v-if="errMsg" type="info" :message="errMsg" />
-  <Live v-else-if="ready" v-bind="props" :live-ws-options="liveWsOptions" />
+  <Song v-else-if="ready" v-bind="props" :live-ws-options="liveWsOptions" />
 </template>
 
 <script>
@@ -10,11 +10,11 @@ import { parseProps } from '@/utils/props';
 import { setCors, autoGet, corsGet } from '@/utils/request';
 import { getOpenData } from '@/utils/biliOpen';
 
-import Live from '@/components/Live';
+import Song from '@/components/Song';
 import DanmakuItem from '@/components/DanmakuItem';
 
 export default defineComponent({
-  components: { Live, DanmakuItem },
+  components: { Song, DanmakuItem },
   setup() {
     const onHashChange = () => window.location.reload();
     window.addEventListener('hashchange', onHashChange);

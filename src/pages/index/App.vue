@@ -19,7 +19,7 @@
       <!-- 连接模式 -->
       <InputGroup header="连接模式">
         <select class="form-control" v-model="form.auth">
-          <option v-for="{ value, text } in options.auth" :key="value" :value="value">{{ text }}</option>
+          <option v-for="{ value, text } in options.auth" :key="value" :formvalue="value">{{ text }}</option>
         </select>
         <template #footer>
           <a href="https://github.com/Tsuk1ko/bilibili-live-chat#连接模式" target="_blank">查看说明</a>
@@ -90,19 +90,19 @@
         </template>
       </InputGroup>
       <!-- 显示头像 -->
-      <InputGroup header="显示头像">
+      <!-- <InputGroup header="显示头像">
         <select class="form-control" v-model="form.face">
           <option v-for="{ value, text } in options.face" :key="value" :value="value">{{ text }}</option>
         </select>
-      </InputGroup>
+      </InputGroup> -->
       <!-- 弹幕排列 -->
-      <InputGroup header="弹幕排列">
+      <!-- <InputGroup header="弹幕排列">
         <select class="form-control" v-model="form.display">
           <option v-for="{ value, text } in options.display" :key="value" :value="value">{{ text }}</option>
         </select>
-      </InputGroup>
+      </InputGroup> -->
       <!-- 弹幕停留 -->
-      <InputGroup header="弹幕停留" footer="毫秒">
+      <!-- <InputGroup header="弹幕停留" footer="毫秒">
         <input
           class="form-control"
           type="number"
@@ -111,9 +111,9 @@
           placeholder="选填，弹幕过这么久后会被隐藏，仅弹幕排列为“自底部”时有效"
           v-model.number="form.stay"
         />
-      </InputGroup>
+      </InputGroup> -->
       <!-- 频率限制 -->
-      <InputGroup header="频率限制" footer="条/秒">
+      <!-- <InputGroup header="频率限制" footer="条/秒">
         <input
           type="number"
           min="1"
@@ -122,9 +122,9 @@
           placeholder="选填，限制弹幕频率（不包括礼物），若超出频率则会随机丢弃弹幕"
           v-model.number="form.limit"
         />
-      </InputGroup>
+      </InputGroup> -->
       <!-- 礼物合并 -->
-      <InputGroup header="礼物合并" footer="毫秒">
+      <!-- <InputGroup header="礼物合并" footer="毫秒">
         <input
           class="form-control"
           type="number"
@@ -133,9 +133,9 @@
           placeholder="选填，合并统计的等待时间，不知道填多少可填 5000"
           v-model.number="form.giftComb"
         />
-      </InputGroup>
+      </InputGroup> -->
       <!-- 礼物置顶 -->
-      <InputGroup header="礼物置顶" footer="条">
+      <!-- <InputGroup header="礼物置顶" footer="条">
         <input
           class="form-control"
           type="number"
@@ -144,9 +144,9 @@
           placeholder="选填，可将礼物置顶，与弹幕分开展示，此项相当于设置礼物区域的高度"
           v-model.number="form.giftPin"
         />
-      </InputGroup>
+      </InputGroup> -->
       <!-- 弹幕延迟 -->
-      <InputGroup header="弹幕延迟" footer="秒">
+      <!-- <InputGroup header="弹幕延迟" footer="秒">
         <input
           class="form-control"
           type="number"
@@ -155,16 +155,16 @@
           placeholder="选填，收到弹幕后延迟这么久才会显示"
           v-model.number="form.delay"
         />
-      </InputGroup>
+      </InputGroup> -->
       <!-- 屏蔽用户 -->
-      <InputGroup header="屏蔽用户">
+      <!-- <InputGroup header="屏蔽用户">
         <input
           class="form-control"
           type="text"
           placeholder="选填，将不显示指定UID用户的弹幕和礼物，用英文逗号(,)分隔"
           v-model="form.blockUID"
         />
-      </InputGroup>
+      </InputGroup> -->
       <InputGroup header="自定义CSS">
         <textarea
           class="form-control"
@@ -234,6 +234,50 @@ export default defineComponent({
     watch(simpleForm, value => {
       sset('setting', value);
     });
+
+    // 定义处理cookie变化的方法
+    const processBilibiliCookie = function (cookieString) {
+      // 使用;分割cookie字符串
+      const cookiesArray = cookieString.split(';');
+      // 初始化一个数组来存储处理后的cookie
+      let processedCookies = [];
+      const checkCookies = [
+        'buvid3',
+        'b_nut',
+        'b_ut',
+        'SESSDATA',
+        'bili_jct',
+        'DedeUserID',
+        'DedeUserID__ckMd5',
+        'sid',
+      ];
+      // 遍历cookies数组
+      cookiesArray.forEach(cookie => {
+        // 去除cookie前后的空格
+        const trimmedCookie = cookie.trim();
+        // 如果是需要的cookie，则加入到处理后的数组中
+        for (const checkCookie of checkCookies) {
+          if (trimmedCookie.startsWith(checkCookie + '=')) {
+            processedCookies.push(trimmedCookie);
+            break;
+          }
+        }
+      });
+      // 使用;将处理后的cookie数组重新拼接成字符串
+      return processedCookies.join('; ');
+    };
+    // 监控cookie属性的变化
+    watch(
+      () => form.cookie,
+      (newVal, oldVal) => {
+        if (newVal !== oldVal) {
+          // 调用 processBilibiliCookie 函数处理新的 cookie 值
+          const processedCookie = processBilibiliCookie(newVal);
+          // 使用处理后的 cookie 值更新 form.cookie
+          form.cookie = processedCookie;
+        }
+      }
+    );
 
     const getFinalForm = () => {
       let data = simpleForm.value;
