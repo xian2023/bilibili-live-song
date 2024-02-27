@@ -1,12 +1,6 @@
 <template>
   <div id="live">
-    <danmaku-list
-      ref="giftPinList"
-      v-bind="props"
-      :gift-show-face="showFace"
-      :is-gift-list="true"
-      v-if="props.giftPin"
-    />
+    <DanmakuMusic ref="orderList" v-bind="props" />
     <danmaku-list ref="danmakuList" v-bind="props" />
   </div>
 </template>
@@ -17,17 +11,17 @@ import { KeepLiveWS } from 'bilibili-live-ws';
 import { propsType } from '@/utils/props';
 import { decodeDmV2 } from '@/utils/protobuf';
 
-import DanmakuList from '@/components/DanmakuList';
+// import DanmakuList from '@/components/DanmakuList';
+import DanmakuMusic from '@/components/DanmakuMusic';
 
 export default {
-  components: { DanmakuList },
+  components: { DanmakuMusic },
   props: {
     ...propsType,
     anchor: Number,
     liveWsOptions: Object,
   },
   setup(props) {
-    const giftPinList = ref(null);
     const danmakuList = ref(null);
 
     const giftCombMap = new Map();
@@ -42,12 +36,17 @@ export default {
       danmakuList.value.addDanmaku({
         type: 'info',
         message,
-        stay: props.stay || 5000,
+        stay: 5000,
       });
     };
-    const addDanmaku = danmaku => {
-      if (props.limit) danmakuList.value.addSpeedLimitDanmaku(danmaku);
-      else danmakuList.value.addDanmaku(danmaku);
+    // const addDanmaku = danmaku => {
+    //   // if (props.limit) danmakuList.value.addSpeedLimitDanmaku(danmaku);
+    //   // else danmakuList.value.addDanmaku(danmaku);
+    // };
+    const channel = new BroadcastChannel('channel-name');
+    channel.onmessage = event => {
+      // console.log(event.data); // 'Hello from Page 1'
+      addInfoDanmaku(event.data);
     };
 
     onMounted(() => {
@@ -78,55 +77,6 @@ export default {
           live.close();
         }
       });
-
-      // 礼物
-      const giftList = props.giftPin ? giftPinList : danmakuList;
-      live.on('SEND_GIFT', ({ data }) => {
-        handleSendGift(data);
-      });
-      live.on('LIVE_OPEN_PLATFORM_SEND_GIFT', ({ data: { uid, uname, gift_name, gift_num, uface } }) => {
-        handleSendGift({ uid, uname, giftName: gift_name, num: gift_num, face: uface });
-      });
-      const handleSendGift = ({ uid, uname, giftName, num, face }) => {
-        if (isBlockedUID(uid)) {
-          console.log(`屏蔽了来自[${uname}]的礼物：${giftName}*${num}`);
-          return;
-        }
-        if (props.giftComb) {
-          const key = `${uid}-${giftName}`;
-          const existComb = giftCombMap.get(key);
-          if (existComb) {
-            giftCombMap.set(key, {
-              ...existComb,
-              num: existComb.num + num,
-            });
-          } else {
-            giftCombMap.set(key, {
-              type: 'gift',
-              showFace: showFace.value,
-              uid,
-              uname,
-              giftName,
-              num,
-              face,
-            });
-            setTimeout(() => {
-              giftList.value.addDanmaku(giftCombMap.get(key));
-              giftCombMap.delete(key);
-            }, props.giftComb);
-          }
-        } else {
-          giftList.value.addDanmaku({
-            type: 'gift',
-            showFace: showFace.value,
-            uid,
-            uname,
-            giftName,
-            num,
-            face,
-          });
-        }
-      };
 
       // 弹幕
       live.on('DANMU_MSG', ({ info: [, message, [uid, uname, isOwner]], dm_v2 }) => {
@@ -160,8 +110,8 @@ export default {
             console.error('[decode dmV2 error]', error);
           }
         }
-        if (props.delay > 0) setTimeout(() => addDanmaku(danmaku), props.delay * 1000);
-        else addDanmaku(danmaku);
+        // if (props.delay > 0) setTimeout(() => addDanmaku(danmaku), props.delay * 1000);
+        // else addDanmaku(danmaku);
       };
 
       // SC
@@ -181,14 +131,14 @@ export default {
         handleSuperChat({ uid, uname, message, face: uface });
       });
       const handleSuperChat = ({ uid, uname, message, face }) => {
-        giftList.value.addDanmaku({
-          type: 'sc',
-          showFace: showFace.value,
-          uid,
-          uname,
-          message,
-          face,
-        });
+        // giftList.value.addDanmaku({
+        //   type: 'sc',
+        //   showFace: showFace.value,
+        //   uid,
+        //   uname,
+        //   message,
+        //   face,
+        // });
       };
 
       // 舰长
@@ -220,19 +170,19 @@ export default {
         }
       );
       const handleGuard = ({ uid, uname, giftName, num, unit, face }) => {
-        giftList.value.addDanmaku({
-          type: 'gift',
-          showFace: showFace.value,
-          uid,
-          uname,
-          giftName: unit ? `${num}个${unit}${giftName}` : giftName,
-          num: unit ? 0 : num,
-          face,
-        });
+        // giftList.value.addDanmaku({
+        //   type: 'gift',
+        //   showFace: showFace.value,
+        //   uid,
+        //   uname,
+        //   giftName: unit ? `${num}个${unit}${giftName}` : giftName,
+        //   num: unit ? 0 : num,
+        //   face,
+        // });
       };
     });
 
-    return { props, showFace, giftPinList, danmakuList };
+    return { props, showFace, danmakuList };
   },
 };
 </script>

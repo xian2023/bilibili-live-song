@@ -19,7 +19,7 @@
       <!-- 连接模式 -->
       <InputGroup header="连接模式">
         <select class="form-control" v-model="form.auth">
-          <option v-for="{ value, text } in options.auth" :key="value" :formvalue="value">{{ text }}</option>
+          <option v-for="{ value, text } in options.auth" :key="value" :value="value">{{ text }}</option>
         </select>
         <template #footer>
           <a href="https://github.com/Tsuk1ko/bilibili-live-chat#连接模式" target="_blank">查看说明</a>
@@ -89,73 +89,6 @@
           <a href="https://github.com/Tsuk1ko/bilibili-live-chat#跨域模式" target="_blank">查看说明</a>
         </template>
       </InputGroup>
-      <!-- 显示头像 -->
-      <!-- <InputGroup header="显示头像">
-        <select class="form-control" v-model="form.face">
-          <option v-for="{ value, text } in options.face" :key="value" :value="value">{{ text }}</option>
-        </select>
-      </InputGroup> -->
-      <!-- 弹幕排列 -->
-      <!-- <InputGroup header="弹幕排列">
-        <select class="form-control" v-model="form.display">
-          <option v-for="{ value, text } in options.display" :key="value" :value="value">{{ text }}</option>
-        </select>
-      </InputGroup> -->
-      <!-- 弹幕停留 -->
-      <!-- <InputGroup header="弹幕停留" footer="毫秒">
-        <input
-          class="form-control"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="选填，弹幕过这么久后会被隐藏，仅弹幕排列为“自底部”时有效"
-          v-model.number="form.stay"
-        />
-      </InputGroup> -->
-      <!-- 频率限制 -->
-      <!-- <InputGroup header="频率限制" footer="条/秒">
-        <input
-          type="number"
-          min="1"
-          step="1"
-          class="form-control"
-          placeholder="选填，限制弹幕频率（不包括礼物），若超出频率则会随机丢弃弹幕"
-          v-model.number="form.limit"
-        />
-      </InputGroup> -->
-      <!-- 礼物合并 -->
-      <!-- <InputGroup header="礼物合并" footer="毫秒">
-        <input
-          class="form-control"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="选填，合并统计的等待时间，不知道填多少可填 5000"
-          v-model.number="form.giftComb"
-        />
-      </InputGroup> -->
-      <!-- 礼物置顶 -->
-      <!-- <InputGroup header="礼物置顶" footer="条">
-        <input
-          class="form-control"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="选填，可将礼物置顶，与弹幕分开展示，此项相当于设置礼物区域的高度"
-          v-model.number="form.giftPin"
-        />
-      </InputGroup> -->
-      <!-- 弹幕延迟 -->
-      <!-- <InputGroup header="弹幕延迟" footer="秒">
-        <input
-          class="form-control"
-          type="number"
-          min="0"
-          step="1"
-          placeholder="选填，收到弹幕后延迟这么久才会显示"
-          v-model.number="form.delay"
-        />
-      </InputGroup> -->
       <!-- 屏蔽用户 -->
       <!-- <InputGroup header="屏蔽用户">
         <input
@@ -275,6 +208,7 @@ export default defineComponent({
           const processedCookie = processBilibiliCookie(newVal);
           // 使用处理后的 cookie 值更新 form.cookie
           form.cookie = processedCookie;
+          sset('setting', form);
         }
       }
     );
