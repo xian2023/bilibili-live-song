@@ -31,9 +31,8 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, getCurrentInstance, provide } from 'vue';
+import { ref, computed, onMounted, provide } from 'vue';
 
-import { sget, sset } from '@/utils/storage';
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
 import { musicServer, qqmusicServer } from '@/utils/musicServer';
 import { addInfoDanmaku, glabal, autoGetAndSave } from '@/utils/tool';
@@ -294,12 +293,15 @@ html {
 
 .orderTable {
   width: 320px;
-  margin-top: 20px;
+  margin-top: 60px;
   border-radius: 10px;
+  margin-left: auto;
+  margin-right: auto;
   background: #0202027e;
   box-shadow: 0px 0px 6px #000000;
   table-layout: fixed;
   position: relative;
+  z-index: 1;
 }
 
 .orderTable thead th {
@@ -415,23 +417,40 @@ html {
 }
 
 /* 配置按钮样式 */
+// .setting {
+//   display: flex;
+//   flex-wrap: wrap;
+//   flex-direction: row;
+//   align-items: center;
+//   justify-content: space-between;
+//   position: absolute;
+//   left: 50%;
+//   transform: translateX(-50%);
+//   width: 200px;
+//   /* 根据需要调整总宽度 */
+//   opacity: 0;
+//   visibility: hidden;
+//   transition:
+//     opacity 0.5s,
+//     visibility 0.5s;
+//   z-index: 999;
+// }
 .setting {
-  display: flex;
-  flex-wrap: wrap;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
   position: absolute;
+  top: 10px; // 或根据需要调整
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
-  /* 根据需要调整总宽度 */
-  opacity: 0;
-  visibility: hidden;
-  transition:
-    opacity 0.5s,
-    visibility 0.5s;
-  z-index: 999;
+  z-index: 2; // 确保在 orderTable 上面
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.main {
+  position: relative; // 使子元素的绝对定位相对于此元素
+  width: 400px; // 或根据需求设置固定宽度
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .main:hover .setting,
@@ -441,24 +460,27 @@ html {
 }
 
 .setting-btn {
-  width: 80px;
-  /* 设置初始宽度 */
-  border: 0;
-  padding: 10px;
-  /* 根据需要调整内边距，使按钮看起来不那么窄 */
-  font-weight: bolder;
-  border-radius: 5px;
-  white-space: nowrap;
-  overflow: hidden;
-}
+  padding: 6px 5px; // 增加内边距，使按钮更易点击
+  margin: 0 5px; // 增加按钮之间的间隔
+  font-size: 16px; // 字体大小适中
+  background-color: #f2f2f2; // 按钮背景色
+  color: black; // 文字颜色
+  border: 1px solid #ccc; // 边框颜色
+  border-radius: 5px; // 圆角边框
+  cursor: pointer; // 鼠标悬停时显示指针
+  transition:
+    background-color 0.3s,
+    transform 0.3s; // 过渡效果
 
-.setting-btn:hover {
-  background: rgb(235, 152, 152);
+  &:hover {
+    background-color: #e9e9e9; // 悬停时的背景色
+    transform: translateY(-2px); // 轻微上移效果
+  }
 }
 
 /* 配置页面样式 */
 .config {
-  width: 520px;
+  width: 400px;
   height: 400px;
   font-size: 21px;
   border-radius: 10px;
@@ -466,7 +488,7 @@ html {
   background: rgb(114, 114, 114);
 
   position: absolute;
-  top: 20px;
+  top: 60px;
   left: 50%;
   transform: translate(-50%, 0);
   display: flex;

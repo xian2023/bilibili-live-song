@@ -9,7 +9,6 @@
 import { onBeforeUnmount, ref, onMounted, computed } from 'vue';
 import { KeepLiveWS } from 'bilibili-live-ws';
 import { propsType } from '@/utils/props';
-import { decodeDmV2 } from '@/utils/protobuf';
 
 import DanmakuList from '@/components/DanmakuList';
 import DanmakuMusic from '@/components/DanmakuMusic';
@@ -24,12 +23,7 @@ export default {
   setup(props) {
     const player = ref(null);
     const danmakuList = ref(null);
-
-    const giftCombMap = new Map();
     const showFace = computed(() => props.face !== 'false');
-
-    const blockUIDs = computed(() => new Set(props.blockUID.split(/,|\|/).map(uid => uid.trim())));
-    const isBlockedUID = uid => blockUIDs.value.has(String(uid));
 
     let failedTimestamps = [];
 
@@ -80,7 +74,7 @@ export default {
       });
 
       // 弹幕
-      live.on('DANMU_MSG', ({ info: [, danmu, [uid, uname, isOwner]], dm_v2 }) => {
+      live.on('DANMU_MSG', ({ info: [, danmu, [uid, uname, isOwner]] }) => {
         // handleDanmaku({ uid, uname, message, isOwner, dmV2: dm_v2 });
         // 处理点歌逻辑
         player.value.identifyDanmuCommand({ uid, uname, danmu, isOwner });
@@ -89,7 +83,7 @@ export default {
         handleDanmaku({ uid, uname, message: msg, face: uface });
       });
 
-      const handleDanmaku = ({ uid, uname, message, isOwner, dmV2, face }) => {
+      const handleDanmaku = () => {
         // if (isBlockedUID(uid)) {
         //   console.log(`屏蔽了来自[${uname}]的弹幕：${message}`);
         //   return;
@@ -134,7 +128,7 @@ export default {
       live.on('LIVE_OPEN_PLATFORM_SUPER_CHAT', ({ data: { uid, uname, message, uface } }) => {
         handleSuperChat({ uid, uname, message, face: uface });
       });
-      const handleSuperChat = ({ uid, uname, message, face }) => {
+      const handleSuperChat = () => {
         // giftList.value.addDanmaku({
         //   type: 'sc',
         //   showFace: showFace.value,
@@ -173,7 +167,7 @@ export default {
           });
         }
       );
-      const handleGuard = ({ uid, uname, giftName, num, unit, face }) => {
+      const handleGuard = () => {
         // giftList.value.addDanmaku({
         //   type: 'gift',
         //   showFace: showFace.value,

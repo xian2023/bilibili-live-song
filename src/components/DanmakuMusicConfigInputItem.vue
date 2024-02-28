@@ -27,17 +27,6 @@ export default {
     showButton: { type: Boolean, default: false },
     buttonText: String,
   },
-  //   emits: ['update:modelValue'], // 通知父组件更新 modelValue
-  //   computed: {
-  //     localValue: {
-  //       get() {
-  //         return this.modelValue;
-  //       },
-  //       set(value) {
-  //         this.$emit('update:modelValue', value); // 当本地值改变时，发出事件
-  //       },
-  //     },
-  //   },
   methods: {
     updateValue(event) {
       this.localValue = event.target.value; // 更新本地值，触发 setter

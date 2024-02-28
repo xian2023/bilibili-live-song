@@ -4,12 +4,22 @@
       <tbody>
         <InputRow
           label="网易云"
-          v-model="form.qrInfo"
+          v-if="form.cookie == ''"
           isDisabled
           placeholder="请扫码登录"
           showButton
           buttonText="二维码登录"
           @buttonClick="qrLogin"
+        />
+        <InputRow
+          label="网易云"
+          v-if="form.cookie !== ''"
+          v-model="form.isLogin"
+          isDisabled
+          placeholder="已登录"
+          showButton
+          buttonText="退出"
+          @buttonClick="loginout"
         />
         <InputRow label="最大点歌数" inputType="number" v-model="form.maxOrder" />
         <InputRow label="最大歌曲时长" inputType="number" v-model="form.maxDuration" />
@@ -68,19 +78,19 @@
 </template>
 
 <script setup>
-import { ref, reactive, inject, watch } from 'vue';
-import { sget, sset } from '@/utils/storage';
+import { inject, onMounted } from 'vue';
 import InputRow from '@/components/DanmakuMusicConfigInputItem';
 import SelectRow from '@/components/DanmakuMusicConfigSelectItem';
 import { glabal, addInfoDanmaku, autoGetAndSave } from '@/utils/tool';
+import { openQrLoginWindow } from '@/utils/qrLoginMusic';
+import { musicServer } from '@/utils/musicServer';
 
 const playerForm = inject('playerForm');
-const play = inject('play');
-const playNext = inject('playNext');
-const addOrder = inject('addOrder');
 
 const configDefaults = {
   qrInfo: '',
+  cookie: '',
+  isLogin: '',
   maxOrder: 15,
   maxDuration: 0,
   overLimit: 0,
@@ -93,7 +103,7 @@ const configDefaults = {
 };
 
 // 定义要监视的属性名称
-const watchedProps = ['qrInfo', 'maxOrder', 'maxDuration', 'overLimit', 'adminList', 'userBlackList', 'songBlackList'];
+const watchedProps = ['cookie', 'maxOrder', 'maxDuration', 'overLimit', 'adminList', 'userBlackList', 'songBlackList'];
 const sKey = 'musicConfig';
 const form = autoGetAndSave(sKey, configDefaults, watchedProps);
 
@@ -101,10 +111,11 @@ glabal.musicConfig = form;
 
 function qrLogin() {
   // 实现二维码登录逻辑
+  openQrLoginWindow();
 }
 
-function setCookie() {
-  // 实现设置Cookie逻辑
+function loginout() {
+  form.cookie = '';
 }
 
 function addAdmin() {
@@ -212,6 +223,19 @@ function checkOrder(order) {
   });
   return true;
 }
+
+onMounted(async () => {
+  if (form.cookie) {
+    // 获取登录的用户信息
+    let loginStatus = await musicServer.loginStatus();
+    if (loginStatus.code == 200) {
+      form.isLogin = '已登录';
+    } else {
+      form.cookie = '';
+      addInfoDanmaku('网易云登录态失效!');
+    }
+  }
+});
 
 defineExpose({
   form,

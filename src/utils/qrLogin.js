@@ -1,11 +1,8 @@
 const qrLoginService = 'https://mashir0-bilibili-qr-login.hf.space';
 
 const getCenterPosition = (width, height) => {
-  const screenLeft = window.screenLeft !== undefined ? window.screenLeft : window.screen.availLeft;
-  const screenTop = window.screenTop !== undefined ? window.screenTop : window.screen.availTop;
-
-  const screenWidth = window.screen.width || window.outerWidth || document.documentElement.clientWidth;
-  const screenHeight = window.screen.height || window.outerWidth || document.documentElement.clientHeight;
+  const screenWidth = document.body.clientWidth;
+  const screenHeight = document.body.clientHeight;
 
   return {
     left: Math.round((screenWidth - width) / 2 + screenLeft),
