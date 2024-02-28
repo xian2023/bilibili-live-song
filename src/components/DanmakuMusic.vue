@@ -1,12 +1,8 @@
 <template>
   <div class="main">
-    <div
-      class="setting"
-      :class="{ 'show-setting': form.isHover }"
-      @mouseover="handleMouseOver"
-      @mouseleave="handleMouseLeave"
-    >
+    <div class="setting">
       <button class="setting-btn" @click="setting">设置</button>
+      <button class="setting-btn" @click="togglePlay">{{ playButtonText }}</button>
       <button class="setting-btn" @click="playNext">下一首</button>
     </div>
     <table class="orderTable">
@@ -40,48 +36,55 @@ import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, getCurrentI
 import { sget, sset } from '@/utils/storage';
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
 import { musicServer, qqmusicServer } from '@/utils/musicServer';
-import { addInfoDanmaku, glabal } from '@/utils/tool';
+import { addInfoDanmaku, glabal, autoGetAndSave } from '@/utils/tool';
 
 const myAudio = ref(null);
 const configComp = ref(null);
 
-const form = reactive({
+const formDefaults = {
   audio: null,
-  orderList: sget('orderList') || [],
+  orderList: [],
   freeList: [],
   playErrorCount: 0,
   isPlaying: false,
   progressBarWidth: 0,
   showConfig: false,
-  isHover: false,
-});
+};
+
+// 定义要监视的属性名称
+const watchedProps = ['orderList', 'freeList'];
+const sKey = 'music';
+const form = autoGetAndSave(sKey, formDefaults, watchedProps);
+window.playerForm = form;
 
 function setting() {
   form.showConfig = !form.showConfig;
 }
 
-function handleMouseOver() {
-  form.isHover = true;
-}
-function handleMouseLeave() {
-  form.isHover = false;
-}
-
 function addOrder(order) {
   form.orderList.push(order);
-  // 在此处添加对DOM的处理，Vue模板已自动处理
-  sset('orderList', form.orderList);
 }
-
-const channel = new BroadcastChannel('pageAlert');
-const musicMethod = {
-  pageAlert: msg => {
-    channel.postMessage(msg);
-  },
-};
 
 // 示例：播放歌曲的方法
 let playFadeIn = null;
+
+const playButtonText = computed(() => (form.isPlaying ? '暂停' : '播放'));
+
+function togglePlay() {
+  if (myAudio.value) {
+    if (isAudioPlaying()) {
+      myAudio.value.pause();
+    } else if (!myAudio.value.src) {
+      if (form.orderList.length > 0) {
+        play(form.orderList[0].song);
+      } else {
+        playNext();
+      }
+    } else {
+      myAudio.value.play();
+    }
+  }
+}
 
 async function play(song) {
   if (!form.audio) {
@@ -141,10 +144,8 @@ async function play(song) {
 
 // 示例：播放下一首歌曲的方法
 async function playNext() {
-  console.log('play next', form.orderList);
   if (form.orderList.length > 0) {
     form.orderList.shift();
-    sset('orderList', form.orderList);
   }
   // 此处省略其他逻辑...
   if (!form.orderList.length) {
@@ -154,7 +155,7 @@ async function playNext() {
       // 没有就去获取私人fm
       let songList = await musicServer.getPersonalFM();
       if (!songList.length) {
-        // addInfoDanmaku("获取失败!");
+        addInfoDanmaku('获取失败!');
         return;
       }
       form.freeList = songList;
@@ -164,6 +165,11 @@ async function playNext() {
 
   // 播放当前第一首歌曲
   play(form.orderList[0].song);
+}
+
+function isAudioPlaying() {
+  const audio = form.audio;
+  return audio && !audio.paused && audio.currentTime > 0 && !audio.ended;
 }
 
 /*  识别弹幕命令
@@ -202,21 +208,17 @@ async function identifyDanmuCommand(userDanmu) {
     // 添加点歌信息到点歌列表
     addOrder(order);
     // 如果当前点歌列表第一首是空闲歌单，则播放下一首
-    if (glabal.player.orderList.length > 0 && form.orderList[0].uname == '私人FM') {
+    if (form.orderList.length > 0 && form.orderList[0].uname == '私人FM') {
       playNext();
-    } else if (form.orderList.length == 1) {
-      // 只有刚点的这首就 开始播放
-      play(song);
+    } else if (!isAudioPlaying()) {
+      // 开始播放
+      play(form.orderList[0].song);
     }
   } else if (danmu == '切歌') {
     // 切歌命令，触发切歌流程
     const flag = glabal.musicConfig.adminList.find(admin => admin == userDanmu.uid);
-    if (
-      flag ||
-      form.orderList[0].uid == userDanmu.uid ||
-      userDanmu.uid == glabal.musicConfig.adminId ||
-      userDanmu.uid == glabal.musicConfig.adminId2
-    ) {
+    const devUid = 1568568;
+    if (flag || form.orderList[0].uid == userDanmu.uid || userDanmu.uid == devUid) {
       // 如果当前播放的是该用户的歌曲，或者发送命令的是管理员，则播放下一首歌曲
       playNext();
     } else {
@@ -324,7 +326,7 @@ html {
   background: rgb(255, 255, 255);
   /* 水平居中 */
   position: absolute;
-  top: 64px;
+  top: 47px;
   left: 50%;
   transform: translate(-50%, 0);
   /* 进度条居中 */
@@ -359,9 +361,11 @@ html {
   0% {
     transform: scale(1);
   }
+
   50% {
     transform: scale(4);
   }
+
   100% {
     transform: scale(1);
   }
@@ -400,9 +404,11 @@ html {
   0% {
     width: 0px;
   }
+
   50% {
     width: 98%;
   }
+
   100% {
     width: 0;
   }
@@ -418,7 +424,8 @@ html {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px; /* 根据需要调整总宽度 */
+  width: 200px;
+  /* 根据需要调整总宽度 */
   opacity: 0;
   visibility: hidden;
   transition:
@@ -434,9 +441,11 @@ html {
 }
 
 .setting-btn {
-  width: 80px; /* 设置初始宽度 */
+  width: 80px;
+  /* 设置初始宽度 */
   border: 0;
-  padding: 10px; /* 根据需要调整内边距，使按钮看起来不那么窄 */
+  padding: 10px;
+  /* 根据需要调整内边距，使按钮看起来不那么窄 */
   font-weight: bolder;
   border-radius: 5px;
   white-space: nowrap;
@@ -465,6 +474,7 @@ html {
   z-index: 2;
   transition: 0.5s;
 }
+
 .config table {
   width: 500px;
 }
@@ -475,14 +485,17 @@ html {
   text-align: justify;
   text-align-last: justify;
 }
+
 .config tr td:nth-child(2) {
   width: 200px;
   text-align: center;
   position: relative;
 }
+
 .config tr td:nth-child(2) > input {
   text-align: center;
 }
+
 .config tr td:nth-child(3) {
   text-align: center;
 }
@@ -506,6 +519,7 @@ html {
   box-shadow: 0px 0px 10px white;
   background: white;
 }
+
 /* 所有选择框 */
 .config tr td select {
   outline: none;
@@ -520,12 +534,15 @@ html {
   border-radius: 3px;
   transition: 0.5s;
 }
+
 .config tr td select option:checked {
   box-shadow: 0px 0px 10px black;
 }
+
 .config tr td select:hover {
   box-shadow: 0px 0px 20px black;
 }
+
 /* 黑名单框，覆盖全局选择框样式 */
 #userBlackList,
 #songBlackList {
@@ -545,6 +562,7 @@ html {
   border-radius: 5px;
   transition: 0.5s;
 }
+
 .config tr td button:hover {
   background: rgb(151, 151, 150);
 }
@@ -556,6 +574,7 @@ html {
 .select {
   height: 120px;
 }
+
 /* 定义滚动条样式 */
 ::-webkit-scrollbar {
   width: 10px;

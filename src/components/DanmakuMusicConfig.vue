@@ -68,31 +68,34 @@
 </template>
 
 <script setup>
-import { ref, reactive, inject } from 'vue';
+import { ref, reactive, inject, watch } from 'vue';
 import { sget, sset } from '@/utils/storage';
 import InputRow from '@/components/DanmakuMusicConfigInputItem';
 import SelectRow from '@/components/DanmakuMusicConfigSelectItem';
-import { glabal, addInfoDanmaku } from '@/utils/tool';
+import { glabal, addInfoDanmaku, autoGetAndSave } from '@/utils/tool';
 
 const playerForm = inject('playerForm');
 const play = inject('play');
 const playNext = inject('playNext');
 const addOrder = inject('addOrder');
 
-const form = reactive({
+const configDefaults = {
   qrInfo: '',
   maxOrder: 15,
-  maxDuration: 180,
+  maxDuration: 0,
   overLimit: 0,
-  newAdminId: 0,
+  newAdminId: '',
   adminList: [],
   userHistory: [],
   userBlackList: [],
   songHistory: [],
   songBlackList: [],
-  // 确保包含所有需要的属性
-  ...sget('musicConfig', {}),
-});
+};
+
+// 定义要监视的属性名称
+const watchedProps = ['qrInfo', 'maxOrder', 'maxDuration', 'overLimit', 'adminList', 'userBlackList', 'songBlackList'];
+const sKey = 'musicConfig';
+const form = autoGetAndSave(sKey, configDefaults, watchedProps);
 
 glabal.musicConfig = form;
 
@@ -108,37 +111,31 @@ function addAdmin() {
   if (form.newAdminId) {
     form.adminList.push(form.newAdminId);
     form.newAdminId = ''; // 清空输入框
-    sset('musicConfig_adminList', form.adminList);
   }
 }
 
 function removeAdmin() {
   form.adminList = form.adminList.filter(admin => admin !== form.selectedAdmin);
-  sset('musicConfig_adminList', form.adminList);
 }
 
 function addUserBlack() {
   if (form.userHistory && !form.userBlackList.includes(form.userHistory)) {
     form.userBlackList.push(form.userHistory);
-    sset('musicConfig_userBlackList', form.userBlackList); // 保存更新后的配置
   }
 }
 
 function delUserBlack() {
   form.userBlackList = form.userBlackList.filter(user => user !== form.userBlackList);
-  sset('musicConfig_userBlackList', form.userBlackList); // 保存更新后的配置
 }
 
 function addSongBlack() {
   if (form.songHistory && !form.songBlackList.includes(form.songHistory)) {
     form.songBlackList.push(form.songHistory);
-    sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
   }
 }
 
 function delSongBlack() {
   form.songBlackList = form.songBlackList.filter(song => song !== form.songBlackList);
-  sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
 }
 
 function addUserHistory(data) {
@@ -147,17 +144,15 @@ function addUserHistory(data) {
     if (form.userHistory.length > 50) {
       form.userHistory.shift();
     }
-    // sset('musicConfig_userHistory', form.songBlackList); // 保存更新后的配置
   }
 }
 
 function addSongHistory(data) {
   if (form.songHistory && !form.songHistory.includes(form.songHistory)) {
-    form.songBlackList.push(data);
-    if (form.songBlackList.length > 50) {
-      form.songBlackList.shift();
+    form.songHistory.push(data);
+    if (form.songHistory.length > 50) {
+      form.songHistory.shift();
     }
-    // sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
   }
 }
 

@@ -10,11 +10,9 @@ import { onBeforeUnmount, ref, onMounted, computed } from 'vue';
 import { KeepLiveWS } from 'bilibili-live-ws';
 import { propsType } from '@/utils/props';
 import { decodeDmV2 } from '@/utils/protobuf';
-import { musicServer, qqmusicServer } from '@/utils/musicServer';
 
 import DanmakuList from '@/components/DanmakuList';
 import DanmakuMusic from '@/components/DanmakuMusic';
-import { channel, glabal } from '@/utils/tool';
 
 export default {
   components: { DanmakuMusic, DanmakuList },
@@ -46,7 +44,9 @@ export default {
     //   // if (props.limit) danmakuList.value.addSpeedLimitDanmaku(danmaku);
     //   // else danmakuList.value.addDanmaku(danmaku);
     // };
+    const channel = new BroadcastChannel('pageAlert');
     channel.onmessage = event => {
+      // console.log("onmessage",event.data);
       addInfoDanmaku(event.data);
     };
 
