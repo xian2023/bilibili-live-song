@@ -1,3 +1,4 @@
+const isDev = true;
 module.exports = {
   publicPath: '',
   productionSourceMap: false,
@@ -12,6 +13,10 @@ module.exports = {
     },
   },
   chainWebpack: config => {
+    if (isDev) {
+      config.devtool('source-map');
+    }
+
     const pageKeys = Object.keys(module.exports.pages);
     config.optimization.splitChunks({
       cacheGroups: {

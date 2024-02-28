@@ -1,8 +1,13 @@
 <template>
   <div class="main">
-    <div class="setting">
+    <div
+      class="setting"
+      :class="{ 'show-setting': form.isHover }"
+      @mouseover="handleMouseOver"
+      @mouseleave="handleMouseLeave"
+    >
       <button class="setting-btn" @click="setting">设置</button>
-      <button class="setting-btn" @click="nextSong">下一首</button>
+      <button class="setting-btn" @click="playNext">下一首</button>
     </div>
     <table class="orderTable">
       <thead>
@@ -11,45 +16,61 @@
         <th>点歌人</th>
       </thead>
       <tbody id="songList">
-        <tr v-for="order in orderList" :key="order.song.sid">
+        <tr v-for="order in form.orderList" :key="order.song.sid">
           <td>{{ order.song.sname }}</td>
           <td>{{ order.song.sartist }}</td>
           <td>{{ order.uname }}</td>
         </tr>
       </tbody>
-    </table>
-    <DanmakuMusicConfig v-if="showConfig === true" />
-    <div class="alertBox"></div>
-    <div class="progress">
-      <div class="progress_bar" :style="{ width: progressBarWidth + 'px' }">
-        <i class="dot" :class="{ dot_blink: isPlaying }"></i>
+      <div class="alertBox"></div>
+      <audio ref="myAudio"></audio>
+      <div class="progress">
+        <div class="progress_bar" :style="{ width: form.progressBarWidth + 'px' }">
+          <i class="dot" :class="{ dot_blink: form.isPlaying }"></i>
+        </div>
       </div>
-    </div>
+    </table>
+    <DanmakuMusicConfig ref="configComp" v-show="form.showConfig === true" />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue';
+import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, getCurrentInstance, provide } from 'vue';
 
+import { sget, sset } from '@/utils/storage';
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
-import { musicServer, qqmusicServer } from '@/utils//musicServer';
+import { musicServer, qqmusicServer } from '@/utils/musicServer';
+import { addInfoDanmaku, glabal } from '@/utils/tool';
 
-// 创建音频对象
-const audio = ref('');
-const orderList = ref([]);
-const freeList = ref([]);
-const playErrorCount = ref(0);
-const isPlaying = ref(false);
-const progressBarWidth = ref(0);
-const showConfig = ref(false);
+const myAudio = ref(null);
+const configComp = ref(null);
+
+const form = reactive({
+  audio: null,
+  orderList: sget('orderList') || [],
+  freeList: [],
+  playErrorCount: 0,
+  isPlaying: false,
+  progressBarWidth: 0,
+  showConfig: false,
+  isHover: false,
+});
 
 function setting() {
-  showConfig.value = !showConfig.value;
+  form.showConfig = !form.showConfig;
+}
+
+function handleMouseOver() {
+  form.isHover = true;
+}
+function handleMouseLeave() {
+  form.isHover = false;
 }
 
 function addOrder(order) {
-  orderList.value.push(order);
+  form.orderList.push(order);
   // 在此处添加对DOM的处理，Vue模板已自动处理
+  sset('orderList', form.orderList);
 }
 
 const channel = new BroadcastChannel('pageAlert');
@@ -63,7 +84,7 @@ const musicMethod = {
 let playFadeIn = null;
 
 async function play(song) {
-  if (!audio.value) {
+  if (!form.audio) {
     alert('播放器未初始化!');
     return;
   }
@@ -78,13 +99,13 @@ async function play(song) {
   // 检查歌曲链接
   if (!url) {
     // 若多首歌链接都获取失败，可能服务器问题，停止请求
-    if (playErrorCount.value++ > 5) {
+    if (form.playErrorCount++ > 5) {
       setInterval(function () {
-        musicMethod.pageAlert('多次播放失败，请确认服务器状态!');
+        addInfoDanmaku('多次播放失败，请确认服务器状态!');
       }, 7000);
       return;
     }
-    musicMethod.pageAlert('歌曲链接被吃掉了(>_<) =>' + playErrorCount.value++);
+    addInfoDanmaku('歌曲链接被吃掉了(>_<) =>' + form.playErrorCount++);
     setTimeout(() => {
       // 播放下一首歌曲
       playNext();
@@ -92,22 +113,22 @@ async function play(song) {
     return;
   }
   /* 可能浏览器插件会导致 audio.src = null 后src并不等于null */
-  audio.value.src = url;
+  form.audio.src = url;
 
   /*----------------------------音量淡入-------------------------------*/
   if (playFadeIn) {
     clearInterval(playFadeIn);
     playFadeIn = null;
   }
-  audio.value.volume = 0;
+  form.audio.volume = 0;
   playFadeIn = setInterval(function () {
     /* 
         此处有两个注意点
         1. 此处若自增 0.1 会出现精度问题，0.1 + 0.2 不等于 0.3
         2. setInterval为全局函数，无法使用 this 指定对象
         */
-    audio.value.volume = (audio.value.volume * 10 + 1) / 10;
-    if (audio.value.volume == 1) {
+    form.audio.volume = (form.audio.volume * 10 + 1) / 10;
+    if (form.audio.volume == 1) {
       clearInterval(playFadeIn);
       playFadeIn = null;
     }
@@ -115,91 +136,156 @@ async function play(song) {
   /*----------------------------音量淡入-------------------------------*/
 
   // 播放
-  audio.value.play();
+  form.audio.play();
 }
 
 // 示例：播放下一首歌曲的方法
 async function playNext() {
-  if (orderList.value.length > 0) {
-    orderList.value.shift();
+  console.log('play next', form.orderList);
+  if (form.orderList.length > 0) {
+    form.orderList.shift();
+    sset('orderList', form.orderList);
   }
   // 此处省略其他逻辑...
-  if (!orderList.value.length) {
+  if (!form.orderList.length) {
     // 若点歌列表没有歌曲，则随机播放空闲歌单的歌曲
-    if (!freeList.value.length) {
-      // musicMethod.pageAlert("没有下一首可以放了>_<!");
+    if (!form.freeList.length) {
+      // addInfoDanmaku("没有下一首可以放了>_<!");
       // 没有就去获取私人fm
       let songList = await musicServer.getPersonalFM();
       if (!songList.length) {
-        // musicMethod.pageAlert("获取失败!");
+        // addInfoDanmaku("获取失败!");
         return;
       }
-      freeList.value = songList;
+      form.freeList = songList;
     }
-    addOrder(freeList.value.shift());
+    addOrder(form.freeList.shift());
   }
 
   // 播放当前第一首歌曲
-  play(orderList.value[0].song);
+  play(form.orderList[0].song);
+}
+
+/*  识别弹幕命令
+        @param: userDanmu 包括用户id、用户名、用户弹幕
+    */
+async function identifyDanmuCommand(userDanmu) {
+  let danmu = userDanmu.danmu.trim();
+
+  // 点歌命令触发
+  let order = null;
+  if (danmu.slice(0, 2) == '点歌') {
+    // 获取点歌关键词
+    let keyword = danmu.slice(2).trim();
+    // 根据平台通过API查询歌曲信息
+    let song = null;
+    if (keyword.slice(0, 2) == 'qq') {
+      song = await qqmusicServer.getSongInfo(keyword.slice(2).trim());
+    } else {
+      song = await musicServer.getSongInfo(keyword);
+    }
+    if (!song) {
+      addInfoDanmaku('挺好听的，虽然我没找到<(▰˘◡˘▰)>');
+      return;
+    }
+    // 封装点歌信息
+    order = {
+      uid: userDanmu.uid,
+      uname: userDanmu.uname,
+      song: song,
+    };
+    // 检查点歌信息
+    if (!configComp.value.checkOrder(order)) {
+      return;
+    }
+
+    // 添加点歌信息到点歌列表
+    addOrder(order);
+    // 如果当前点歌列表第一首是空闲歌单，则播放下一首
+    if (glabal.player.orderList.length > 0 && form.orderList[0].uname == '私人FM') {
+      playNext();
+    } else if (form.orderList.length == 1) {
+      // 只有刚点的这首就 开始播放
+      play(song);
+    }
+  } else if (danmu == '切歌') {
+    // 切歌命令，触发切歌流程
+    const flag = glabal.musicConfig.adminList.find(admin => admin == userDanmu.uid);
+    if (
+      flag ||
+      form.orderList[0].uid == userDanmu.uid ||
+      userDanmu.uid == glabal.musicConfig.adminId ||
+      userDanmu.uid == glabal.musicConfig.adminId2
+    ) {
+      // 如果当前播放的是该用户的歌曲，或者发送命令的是管理员，则播放下一首歌曲
+      playNext();
+    } else {
+      addInfoDanmaku('不能切别人点的歌哦(^o^)');
+    }
+  }
 }
 
 onMounted(() => {
-  audio.value = new Audio();
+  form.audio = myAudio.value;
   // 初始化事件监听器
-  audio.value.addEventListener('play', () => {
-    isPlaying.value = true;
+  form.audio.addEventListener('play', () => {
+    form.isPlaying = true;
   });
-  audio.value.addEventListener('pause', () => {
-    isPlaying.value = false;
+  form.audio.addEventListener('pause', () => {
+    form.isPlaying = false;
   });
-  audio.value.addEventListener('timeupdate', () => {
-    if (audio.value.duration > 0) {
-      progressBarWidth.value = (audio.value.currentTime / audio.value.duration) * 280;
+  form.audio.addEventListener('timeupdate', () => {
+    if (form.audio.duration > 0) {
+      form.progressBarWidth = (form.audio.currentTime / form.audio.duration) * 280;
     }
   });
-  audio.value.addEventListener('ended', playNext);
-  audio.value.addEventListener('error', () => {
+  form.audio.addEventListener('ended', playNext);
+  form.audio.addEventListener('error', () => {
     alert('播放错误，即将播放下一首');
     playNext();
   });
 });
+
+provide('playerForm', form);
+provide('play', play);
+provide('playNext', playNext);
+provide('addOrder', addOrder);
+
+defineExpose({
+  form,
+  play,
+  playNext,
+  addOrder,
+  identifyDanmuCommand,
+});
+// dev
+glabal.dianGe = identifyDanmuCommand;
 </script>
 
 <style lang="scss">
-// 定义一些常用的变量
-$primary-color: white;
-$background-color: transparent;
-$shadow-color: black;
-$progress-bar-color: #3d3c3c;
-$alert-background: #000000c0;
-$alert-shadow: #5a5a5a;
-$setting-btn-hover-bg: rgb(235, 152, 152);
-$config-background: rgb(114, 114, 114);
-$input-background: rgb(187, 187, 187);
-$input-hover-background: white;
-
 body,
 html {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  color: $primary-color;
-  background: $background-color;
+  color: white;
+  background: transparent;
   display: flex;
   justify-content: center;
 }
 
+/* 二维码 */
 #qrImg {
   width: 200px;
   height: 200px;
   border-radius: 5px;
   display: none;
-  box-shadow: 0 0 20px $shadow-color;
+  box-shadow: 0px 0px 20px black;
   z-index: 4;
-  position: absolute;
   left: 50%;
   top: 200px;
+  position: absolute;
   transform: translate(-50%, -50%);
   transition: 0.5s;
 }
@@ -209,65 +295,75 @@ html {
   margin-top: 20px;
   border-radius: 10px;
   background: #0202027e;
-  box-shadow: 0 0 6px $shadow-color;
+  box-shadow: 0px 0px 6px #000000;
   table-layout: fixed;
   position: relative;
+}
 
-  thead th {
-    font-size: 20px;
-    text-align: center;
-    padding: 10px;
-  }
+.orderTable thead th {
+  font-size: 20px;
+  text-align: center;
+  padding: 10px;
+  white-space: 1em;
+}
 
-  tbody td {
-    padding: 10px;
-    text-align: center;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-  }
+.orderTable tbody td {
+  padding: 10px;
+  text-align: center;
+  /* 隐藏溢出文字 */
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .progress {
-  @extend .orderTable; // 假设进度条和订单表格有共同的样式
+  z-index: 1;
   width: 280px;
   height: 3px;
   border-radius: 50px;
-  background: $primary-color;
+  background: rgb(255, 255, 255);
+  /* 水平居中 */
   position: absolute;
   top: 64px;
   left: 50%;
   transform: translate(-50%, 0);
+  /* 进度条居中 */
   display: flex;
   align-items: center;
+}
 
-  &_bar {
-    width: 0;
-    height: 3px;
-    border-radius: 50px;
-    background: $progress-bar-color;
-    position: relative;
+.progress_bar {
+  width: 0px;
+  height: 3px;
+  border-radius: 50px;
+  background: #3d3c3c;
+  position: relative;
+}
 
-    .dot {
-      z-index: 2;
-      width: 3px;
-      height: 3px;
-      background: rgb(212, 211, 212);
-      border-radius: 100%;
-      box-shadow: 0 0 4px $shadow-color;
-      float: right;
-    }
-  }
+.progress_bar .dot {
+  z-index: 2;
+  width: 3px;
+  height: 3px;
+  background: rgb(212, 211, 212);
+  border-radius: 100%;
+  box-shadow: 0px 0px 4px #000000;
+  float: right;
+}
+
+/* 音乐进度条闪烁动画 */
+.dot_blink {
+  animation: dot_blink 3s infinite;
 }
 
 @keyframes dot_blink {
-  0%,
-  100% {
+  0% {
     transform: scale(1);
   }
-
   50% {
     transform: scale(4);
+  }
+  100% {
+    transform: scale(1);
   }
 }
 
@@ -276,43 +372,43 @@ html {
   height: 500px;
   position: absolute;
   top: 59px;
-  background: $background-color;
+  background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
 
-  .text {
-    color: rgb(250, 136, 136);
-    margin: 0 0 7px;
-    padding: 7px 0;
-    font-size: 17px;
-    border-radius: 7px;
-    background: $alert-background;
-    box-shadow: 0 0 10px $alert-shadow;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    z-index: 3;
-    text-overflow: ellipsis;
-    animation: show 7s forwards ease-in-out;
-  }
+.text {
+  width: 0px;
+  color: rgb(250, 136, 136);
+  margin: 0px 0px 7px 0px;
+  padding: 7px 0px 7px 0px;
+  font-size: 17px;
+  border-radius: 7px;
+  background: #000000c0;
+  box-shadow: 0px 0px 10px #5a5a5a;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  z-index: 3;
+  text-overflow: ellipsis;
+  animation: show 7s forwards ease-in-out;
 }
 
 @keyframes show {
   0% {
-    width: 0;
+    width: 0px;
   }
-
   50% {
     width: 98%;
   }
-
   100% {
     width: 0;
   }
 }
 
+/* 配置按钮样式 */
 .setting {
   display: flex;
   flex-wrap: wrap;
@@ -322,9 +418,163 @@ html {
   position: absolute;
   left: 50%;
   transform: translateX(-50%);
-  width: 200px;
+  width: 200px; /* 根据需要调整总宽度 */
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.5s;
+  transition:
+    opacity 0.5s,
+    visibility 0.5s;
+  z-index: 999;
+}
+
+.main:hover .setting,
+.setting:hover {
+  opacity: 1;
+  visibility: visible;
+}
+
+.setting-btn {
+  width: 80px; /* 设置初始宽度 */
+  border: 0;
+  padding: 10px; /* 根据需要调整内边距，使按钮看起来不那么窄 */
+  font-weight: bolder;
+  border-radius: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.setting-btn:hover {
+  background: rgb(235, 152, 152);
+}
+
+/* 配置页面样式 */
+.config {
+  width: 520px;
+  height: 400px;
+  font-size: 21px;
+  border-radius: 10px;
+  overflow: auto;
+  background: rgb(114, 114, 114);
+
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  display: flex;
+  justify-content: center;
+  z-index: 2;
+  transition: 0.5s;
+}
+.config table {
+  width: 500px;
+}
+
+.config tr td:nth-child(1) {
+  width: 150px;
+  font-weight: 500;
+  text-align: justify;
+  text-align-last: justify;
+}
+.config tr td:nth-child(2) {
+  width: 200px;
+  text-align: center;
+  position: relative;
+}
+.config tr td:nth-child(2) > input {
+  text-align: center;
+}
+.config tr td:nth-child(3) {
+  text-align: center;
+}
+
+.config tr td input {
+  /* outline: none; */
+  width: 140px;
+  padding: 3px;
+  outline: none;
+  border: 1px white solid;
+  border-radius: 5px;
+  font-size: large;
+  background: rgb(187, 187, 187);
+  position: absolute;
+  transform: translate(-50%, -50%);
+  transition: 0.5s;
+}
+
+.config tr td input:hover {
+  width: 150px;
+  box-shadow: 0px 0px 10px white;
+  background: white;
+}
+/* 所有选择框 */
+.config tr td select {
+  outline: none;
+  width: 100%;
+  height: 100px;
+  text-align: center;
+  font-size: large;
+  color: white;
+  outline: none;
+  overflow: auto;
+  background: rgb(187, 187, 187);
+  border-radius: 3px;
+  transition: 0.5s;
+}
+.config tr td select option:checked {
+  box-shadow: 0px 0px 10px black;
+}
+.config tr td select:hover {
+  box-shadow: 0px 0px 20px black;
+}
+/* 黑名单框，覆盖全局选择框样式 */
+#userBlackList,
+#songBlackList {
+  font-weight: bolder;
+  border: 3px #000000 solid;
+  background: rgb(16, 20, 16);
+  transition: 0.5s;
+}
+
+.config tr td button {
+  border: 0px;
+  padding: 3px;
+  width: 100px;
+  outline: none;
+  background: rgb(255, 253, 253);
+  box-shadow: 1px 1px 10px white;
+  border-radius: 5px;
+  transition: 0.5s;
+}
+.config tr td button:hover {
+  background: rgb(151, 151, 150);
+}
+
+.input {
+  height: 50px;
+}
+
+.select {
+  height: 120px;
+}
+/* 定义滚动条样式 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 6px;
+  background: transparent;
+}
+
+/*定义滚动条轨道 内阴影+圆角*/
+::-webkit-scrollbar-track {
+  /* box-shadow: inset 0 0 10px rgba(12, 235, 4, 0.5); */
+  border-radius: 10px;
+  background: transparent;
+}
+
+/*定义滑块 内阴影+圆角*/
+::-webkit-scrollbar-thumb {
+  border: 1px gray solid;
+  border-radius: 10px;
+  /* box-shadow: inset 0 0 0px rgba(145, 77, 77, 0.5); */
+  background: rgb(255, 255, 255);
 }
 </style>

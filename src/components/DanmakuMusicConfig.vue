@@ -1,75 +1,100 @@
 <template>
-  <div id="panel" class="panel panel-default" spellcheck="false">
-    <div class="panel-body">
-      <div class="config">
-        <!-- 网易云 -->
-        <InputGroup header="网易云">
-          <input type="text" placeholder="请扫码登录" v-model="form.qrInfo" disabled />
-          <template #footer>
-            <button @click="qrLogin">二维码登录</button>
-          </template>
-        </InputGroup>
-        <!-- QQ音乐 -->
-        <InputGroup header="QQ音乐">
-          <input type="tel" placeholder="请输入cookie" v-model="form.cookie" />
-          <template #footer>
-            <button @click="setCookie">设置Cookie</button>
-          </template>
-        </InputGroup>
-        <!-- 主播uid -->
-        <InputGroup header="主播uid">
-          <input type="text" v-model="form.adminId" />
-        </InputGroup>
-        <!-- 最大点歌数 -->
-        <InputGroup header="最大点歌数">
-          <input type="text" v-model="form.maxOrder" />
-        </InputGroup>
-        <!-- 最大歌曲时长 -->
-        <InputGroup header="最大歌曲时长">
-          <input type="text" v-model="form.maxDuration" />
-        </InputGroup>
-        <!-- 超时限播时长 -->
-        <InputGroup header="超时限播时长">
-          <input type="text" v-model="form.overLimit" />
-        </InputGroup>
-        <!-- 新增管理员 -->
-        <InputGroup header="新增管理员">
-          <input type="text" v-model="form.newAdminId" />
-          <template #footer>
-            <button @click="addAdmin">添加</button>
-          </template>
-        </InputGroup>
-        <!-- 管理员名单 -->
-        <InputGroup header="管理员名单">
-          <select v-model="form.selectedAdmin" size="4">
-            <option v-for="admin in form.adminList" :key="admin" :value="admin">{{ admin }}</option>
-          </select>
-          <template #footer>
-            <button @click="removeAdmin">移除</button>
-          </template>
-        </InputGroup>
-      </div>
-    </div>
+  <div class="config">
+    <table>
+      <tbody>
+        <InputRow
+          label="网易云"
+          v-model="form.qrInfo"
+          isDisabled
+          placeholder="请扫码登录"
+          showButton
+          buttonText="二维码登录"
+          @buttonClick="qrLogin"
+        />
+        <InputRow label="最大点歌数" inputType="number" v-model="form.maxOrder" />
+        <InputRow label="最大歌曲时长" inputType="number" v-model="form.maxDuration" />
+        <InputRow label="超时限播时长" inputType="number" v-model="form.overLimit" />
+        <InputRow
+          label="新增管理员"
+          inputType="number"
+          v-model="form.newAdminId"
+          showButton
+          buttonText="添加"
+          @buttonClick="addAdmin"
+        />
+
+        <SelectRow
+          label="管理员名单"
+          v-model="form.adminList"
+          :options="form.adminList.map(admin => ({ id: admin, value: admin, text: admin }))"
+          buttonText="移除"
+          @buttonClick="removeAdmin"
+        />
+
+        <SelectRow
+          label="历史点歌用户"
+          v-model="form.userHistory"
+          :options="form.userHistory.map(user => ({ id: user.id, value: user, text: user.name }))"
+          buttonText="加入黑名单"
+          @buttonClick="addUserBlack"
+        />
+
+        <SelectRow
+          label="用户黑名单"
+          v-model="form.userBlackList"
+          :options="form.userBlackList.map(user => ({ id: user.id, value: user, text: user.name }))"
+          buttonText="移除黑名单"
+          @buttonClick="delUserBlack"
+        />
+
+        <SelectRow
+          label="历史点歌歌曲"
+          v-model="form.songHistory"
+          :options="form.songHistory.map(song => ({ id: song.id, value: song, text: song.name }))"
+          buttonText="加入黑名单"
+          @buttonClick="addSongBlack"
+        />
+
+        <SelectRow
+          label="歌曲黑名单"
+          v-model="form.songBlackList"
+          :options="form.songBlackList.map(song => ({ id: song.id, value: song, text: song.name }))"
+          buttonText="移除黑名单"
+          @buttonClick="delSongBlack"
+        />
+      </tbody>
+    </table>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, inject } from 'vue';
 import { sget, sset } from '@/utils/storage';
+import InputRow from '@/components/DanmakuMusicConfigInputItem';
+import SelectRow from '@/components/DanmakuMusicConfigSelectItem';
+import { glabal, addInfoDanmaku } from '@/utils/tool';
+
+const playerForm = inject('playerForm');
+const play = inject('play');
+const playNext = inject('playNext');
+const addOrder = inject('addOrder');
 
 const form = reactive({
-  // 省略其他初始值以保持重点突出
   qrInfo: '',
-  cookie: '',
-  adminId: '',
-  maxOrder: '',
-  maxDuration: '',
-  overLimit: '',
-  newAdminId: '',
+  maxOrder: 15,
+  maxDuration: 180,
+  overLimit: 0,
+  newAdminId: 0,
   adminList: [],
-  selectedAdmin: null,
+  userHistory: [],
+  userBlackList: [],
+  songHistory: [],
+  songBlackList: [],
+  // 确保包含所有需要的属性
   ...sget('musicConfig', {}),
 });
+
+glabal.musicConfig = form;
 
 function qrLogin() {
   // 实现二维码登录逻辑
@@ -83,12 +108,120 @@ function addAdmin() {
   if (form.newAdminId) {
     form.adminList.push(form.newAdminId);
     form.newAdminId = ''; // 清空输入框
-    sset('musicConfig', form);
+    sset('musicConfig_adminList', form.adminList);
   }
 }
 
 function removeAdmin() {
   form.adminList = form.adminList.filter(admin => admin !== form.selectedAdmin);
-  sset('musicConfig', form);
+  sset('musicConfig_adminList', form.adminList);
 }
+
+function addUserBlack() {
+  if (form.userHistory && !form.userBlackList.includes(form.userHistory)) {
+    form.userBlackList.push(form.userHistory);
+    sset('musicConfig_userBlackList', form.userBlackList); // 保存更新后的配置
+  }
+}
+
+function delUserBlack() {
+  form.userBlackList = form.userBlackList.filter(user => user !== form.userBlackList);
+  sset('musicConfig_userBlackList', form.userBlackList); // 保存更新后的配置
+}
+
+function addSongBlack() {
+  if (form.songHistory && !form.songBlackList.includes(form.songHistory)) {
+    form.songBlackList.push(form.songHistory);
+    sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
+  }
+}
+
+function delSongBlack() {
+  form.songBlackList = form.songBlackList.filter(song => song !== form.songBlackList);
+  sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
+}
+
+function addUserHistory(data) {
+  if (form.userHistory && !form.userHistory.includes(data)) {
+    form.userHistory.push(data);
+    if (form.userHistory.length > 50) {
+      form.userHistory.shift();
+    }
+    // sset('musicConfig_userHistory', form.songBlackList); // 保存更新后的配置
+  }
+}
+
+function addSongHistory(data) {
+  if (form.songHistory && !form.songHistory.includes(form.songHistory)) {
+    form.songBlackList.push(data);
+    if (form.songBlackList.length > 50) {
+      form.songBlackList.shift();
+    }
+    // sset('musicConfig_songBlackList', form.songBlackList); // 保存更新后的配置
+  }
+}
+
+function checkOrder(order) {
+  // 查询用户是否被拉入黑名单
+  for (let i = 0; i < form.userBlackList.length; i++) {
+    if (form.userBlackList[i].uid == order.uid) {
+      addInfoDanmaku('你已被加入暗杀名单!(▼へ▼メ)!');
+      return false;
+    }
+  }
+  // 用户点歌数是否已达上限
+  // if(playerForm.orderList.filter(value => value.uid == order.uid).length >= form.userOrder){
+  //     addInfoDanmaku("你点太多啦，歇歇吧>_<!");
+  //     return false;
+  // }
+  // 最大点歌数是否已达上限
+  if (playerForm.orderList.length >= form.maxOrder) {
+    addInfoDanmaku('我装不下更多的歌啦>_<!');
+    return false;
+  }
+
+  // 查询歌曲是否被拉入黑名单
+  for (let i = 0; i < form.songBlackList.length; i++) {
+    if (form.songBlackList[i].sid == order.song.sid) {
+      addInfoDanmaku('请不要乱点奇怪的歌!(▼ヘ▼#)');
+      return false;
+    }
+  }
+
+  // 判断该歌曲是否已在点歌列表
+  if (
+    playerForm.orderList.some(value => {
+      if (value.song.platform == 'qq') {
+        value.song.name == order.song.name;
+      } else {
+        value.song.sid == order.song.sid;
+      }
+    })
+  ) {
+    addInfoDanmaku('已经点上啦!>_<!');
+    return false;
+  }
+  if (form.maxDuration > 0 && order.song.duration > form.maxDuration) {
+    // 该歌曲是否无歌曲限制，且歌曲时长超出规定,
+    addInfoDanmaku('你点的歌时太长啦!>_<');
+    return false;
+  }
+  // 点歌成功，加入历史用户和历史歌曲列表中
+  addUserHistory({
+    id: order.uid,
+    name: order.uname,
+  });
+  addSongHistory({
+    id: order.song.sid,
+    name: order.song.sname,
+  });
+  return true;
+}
+
+defineExpose({
+  form,
+  checkOrder,
+});
 </script>
+
+<style lang="scss"></style>

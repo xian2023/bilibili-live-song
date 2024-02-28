@@ -1,7 +1,7 @@
 <template>
   <div id="live">
-    <DanmakuMusic ref="orderList" v-bind="props" />
-    <danmaku-list ref="danmakuList" v-bind="props" />
+    <DanmakuMusic ref="player" />
+    <DanmakuList ref="danmakuList" v-bind="props" />
   </div>
 </template>
 
@@ -10,18 +10,21 @@ import { onBeforeUnmount, ref, onMounted, computed } from 'vue';
 import { KeepLiveWS } from 'bilibili-live-ws';
 import { propsType } from '@/utils/props';
 import { decodeDmV2 } from '@/utils/protobuf';
+import { musicServer, qqmusicServer } from '@/utils/musicServer';
 
-// import DanmakuList from '@/components/DanmakuList';
+import DanmakuList from '@/components/DanmakuList';
 import DanmakuMusic from '@/components/DanmakuMusic';
+import { channel, glabal } from '@/utils/tool';
 
 export default {
-  components: { DanmakuMusic },
+  components: { DanmakuMusic, DanmakuList },
   props: {
     ...propsType,
     anchor: Number,
     liveWsOptions: Object,
   },
   setup(props) {
+    const player = ref(null);
     const danmakuList = ref(null);
 
     const giftCombMap = new Map();
@@ -43,9 +46,7 @@ export default {
     //   // if (props.limit) danmakuList.value.addSpeedLimitDanmaku(danmaku);
     //   // else danmakuList.value.addDanmaku(danmaku);
     // };
-    const channel = new BroadcastChannel('channel-name');
     channel.onmessage = event => {
-      // console.log(event.data); // 'Hello from Page 1'
       addInfoDanmaku(event.data);
     };
 
@@ -79,37 +80,40 @@ export default {
       });
 
       // 弹幕
-      live.on('DANMU_MSG', ({ info: [, message, [uid, uname, isOwner]], dm_v2 }) => {
-        handleDanmaku({ uid, uname, message, isOwner, dmV2: dm_v2 });
+      live.on('DANMU_MSG', ({ info: [, danmu, [uid, uname, isOwner]], dm_v2 }) => {
+        // handleDanmaku({ uid, uname, message, isOwner, dmV2: dm_v2 });
+        // 处理点歌逻辑
+        player.value.identifyDanmuCommand({ uid, uname, danmu, isOwner });
       });
       live.on('LIVE_OPEN_PLATFORM_DM', ({ data: { uid, uname, msg, uface } }) => {
         handleDanmaku({ uid, uname, message: msg, face: uface });
       });
+
       const handleDanmaku = ({ uid, uname, message, isOwner, dmV2, face }) => {
-        if (isBlockedUID(uid)) {
-          console.log(`屏蔽了来自[${uname}]的弹幕：${message}`);
-          return;
-        }
-        const danmaku = {
-          type: 'message',
-          showFace: showFace.value,
-          uid,
-          uname,
-          message,
-          isAnchor: uid === props.anchor,
-          isOwner: !!isOwner,
-          face,
-        };
-        if (dmV2) {
-          try {
-            const {
-              user: { face },
-            } = decodeDmV2(dmV2);
-            danmaku.face = face;
-          } catch (error) {
-            console.error('[decode dmV2 error]', error);
-          }
-        }
+        // if (isBlockedUID(uid)) {
+        //   console.log(`屏蔽了来自[${uname}]的弹幕：${message}`);
+        //   return;
+        // }
+        // const danmaku = {
+        //   type: 'message',
+        //   showFace: showFace.value,
+        //   uid,
+        //   uname,
+        //   message,
+        //   isAnchor: uid === props.anchor,
+        //   isOwner: !!isOwner,
+        //   face,
+        // };
+        // if (dmV2) {
+        //   try {
+        //     const {
+        //       user: { face },
+        //     } = decodeDmV2(dmV2);
+        //     danmaku.face = face;
+        //   } catch (error) {
+        //     console.error('[decode dmV2 error]', error);
+        //   }
+        // }
         // if (props.delay > 0) setTimeout(() => addDanmaku(danmaku), props.delay * 1000);
         // else addDanmaku(danmaku);
       };
@@ -182,7 +186,7 @@ export default {
       };
     });
 
-    return { props, showFace, danmakuList };
+    return { props, showFace, danmakuList, player };
   },
 };
 </script>

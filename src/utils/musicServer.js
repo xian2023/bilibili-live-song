@@ -1,7 +1,4 @@
-// import { config } from "../components/config.js";
-// import { musicMethod } from "../public/method.js";
-import DanmakuMusic from '@/components/DanmakuMusic';
-const config = DanmakuMusic.value;
+import { addInfoDanmaku, glabal } from '@/utils/tool';
 
 export { musicServer, qqmusicServer };
 
@@ -53,13 +50,6 @@ function axios(option) {
   return customFetch(option.url, option.params);
 }
 
-const channel = new BroadcastChannel('pageAlert');
-const musicMethod = {
-  pageAlert: msg => {
-    channel.postMessage(msg);
-  },
-};
-
 /* 歌曲API服务 */
 const musicServer = {
   // 服务器地址 gitpage 需要https服务器
@@ -80,7 +70,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        data = resp.data;
+        data = resp;
       })
       .catch(function (error) {
         console.log('验证码发送失败!', error.response);
@@ -103,7 +93,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        data = resp.data;
+        data = resp;
       })
       .catch(function (error) {
         console.log('验证码校验失败!', error.response);
@@ -126,7 +116,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        data = resp.data;
+        data = resp;
       })
       .catch(function (error) {
         console.log('登录失败!', error.response);
@@ -143,7 +133,7 @@ const musicServer = {
       url: this.baseUrl + '/register/anonimous',
     })
       .then(function (resp) {
-        data = resp.data;
+        data = resp;
       })
       .catch(function (error) {
         console.log('游客登录失败！', error.response);
@@ -164,7 +154,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        unikey = resp.data.data.unikey;
+        unikey = resp.data.unikey;
       })
       .catch(function (error) {
         console.log('获取二维码key失败!', error.response);
@@ -187,7 +177,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        qrImgUrl = resp.data.data.qrimg;
+        qrImgUrl = resp.data.qrimg;
       })
       .catch(function (error) {
         console.log('二维码图片获取失败!', error.response);
@@ -209,7 +199,7 @@ const musicServer = {
       },
     })
       .then(function (resp) {
-        data = resp.data;
+        data = resp;
       })
       .catch(function (error) {
         console.log('获取二维码扫描状态失败!', error.response);
@@ -224,7 +214,7 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/logout',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
       },
     }).catch(function (error) {
       console.log('退出登录失败！', error.response);
@@ -239,12 +229,12 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/user/account',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
       },
     })
       .then(function (resp) {
-        data = resp.data;
-        console.log(resp.data);
+        data = resp;
+        console.log(resp);
       })
       .catch(function (error) {
         console.log('获取用户详情失败!', error.response);
@@ -259,11 +249,11 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/login/status',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
       },
     })
       .then(function (resp) {
-        data = resp.data.data;
+        data = resp.data;
       })
       .catch(function (error) {
         console.log('获取登录状态失败!', error.response);
@@ -280,7 +270,7 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/search',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
         keywords: keyword,
         limit: 10,
         type: 1,
@@ -288,7 +278,7 @@ const musicServer = {
     })
       .then(function (resp) {
         // 获取歌曲列表
-        let songs = resp.data.result.songs;
+        let songs = resp.result.songs;
         if (songs.length > 0) {
           // 封装歌曲信息
           song = {
@@ -315,15 +305,15 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/song/url',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
         id: songId,
       },
     })
       .then(function (resp) {
-        if (resp.data.code < 0) {
-          musicMethod.pageAlert(resp.data.message + '(登录)');
-        } else if (resp.data.data[0].url) {
-          url = resp.data.data[0].url;
+        if (resp.code < 0) {
+          addInfoDanmaku(resp.message + '(登录)');
+        } else if (resp.data[0].url) {
+          url = resp.data[0].url;
         }
       })
       .catch(function (error) {
@@ -341,12 +331,12 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/playlist/detail',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
         id: listId,
       },
     })
       .then(function (resp) {
-        let list = resp.data.playlist;
+        let list = resp.playlist;
         let songs = list.tracks;
         // 获取歌单的所有歌曲
         for (let i = 0; i < songs.length; i++) {
@@ -375,15 +365,15 @@ const musicServer = {
       method: 'get',
       url: this.baseUrl + '/personal_fm',
       params: {
-        cookie: config.cookie,
+        cookie: glabal.musicConfig.cookie,
       },
     })
       .then(function (resp) {
-        let songs = resp.data.data;
+        let songs = resp.data;
         //获取歌单的所有歌曲
         for (let i = 0; i < songs.length; i++) {
           let song = {
-            uid: '12345',
+            uid: songs[i].id,
             uname: '私人FM',
             song: {
               platform: 'wy',
@@ -422,7 +412,7 @@ const qqmusicServer = {
     })
       .then(function (resp) {
         // 获取歌曲列表
-        let songs = resp.data.list;
+        let songs = resp.list;
         if (songs.length > 0) {
           // 封装歌曲信息
           song = {
@@ -436,7 +426,7 @@ const qqmusicServer = {
         }
       })
       .catch(function (error) {
-        musicMethod.pageAlert(error.message);
+        addInfoDanmaku(error.message);
       });
     return song;
   },
@@ -453,7 +443,7 @@ const qqmusicServer = {
   //         }
   //     }).then(function (resp) {
   //         // 获取歌曲列表
-  //         let songs = resp.data.data.list;
+  //         let songs = resp.data.list;
   //         if(songs.length > 0){
   //             // 封装歌曲信息
   //             song = {
@@ -465,7 +455,7 @@ const qqmusicServer = {
   //             };
   //         }
   //     }).catch(function(error){
-  //         musicMethod.pageAlert(error.message);
+  //         addInfoDanmaku(error.message);
   //     });
   //     return song;
   // },
@@ -482,15 +472,15 @@ const qqmusicServer = {
   //             id: songmid
   //         }
   //     }).then(function (resp) {
-  //         if(resp.data.result == 100){
+  //         if(resp.result == 100){
   //             // 获取对象的所有键
-  //             url = resp.data.data;
+  //             url = resp.data;
   //         }else{
-  //             console.log(resp.data);
-  //             musicMethod.pageAlert("链接获取失败");
+  //             console.log(resp);
+  //             addInfoDanmaku("链接获取失败");
   //         }
   //     }).catch(function(error){
-  //         musicMethod.pageAlert(error.message);
+  //         addInfoDanmaku(error.message);
   //     });
   //     return url;
   // },
@@ -509,10 +499,10 @@ const qqmusicServer = {
   //             'Content-Type': 'application/json'
   //         },
   //     }).then(function (resp) {
-  //         musicMethod.pageAlert("cookie设置成功！");
+  //         addInfoDanmaku("cookie设置成功！");
 
   //     }).catch(function(error){
-  //         musicMethod.pageAlert("cookie设置失败！");
+  //         addInfoDanmaku("cookie设置失败！");
   //     });
   // },
   // /* 获取cookie
@@ -526,9 +516,9 @@ const qqmusicServer = {
   //             id: qq,
   //         },
   //     }).then(function (resp) {
-  //         musicMethod.pageAlert("获取cookie成功！");
+  //         addInfoDanmaku("获取cookie成功！");
   //     }).catch(function(error){
-  //         musicMethod.pageAlert("获取cookie失败！");
+  //         addInfoDanmaku("获取cookie失败！");
   //     });
   // },
 };
