@@ -1,4 +1,3 @@
-const isDev = true;
 module.exports = {
   publicPath: '',
   productionSourceMap: false,
@@ -13,7 +12,7 @@ module.exports = {
     },
   },
   chainWebpack: config => {
-    if (isDev) {
+    if (process.env.NODE_ENV !== 'production') {
       config.devtool('source-map');
     }
 
