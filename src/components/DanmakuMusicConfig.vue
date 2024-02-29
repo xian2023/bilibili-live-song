@@ -39,6 +39,8 @@
           @buttonClick="resetBackgroundColor"
         />
 
+        <InputRow label="背景透明度" inputType="range" min="0" max="255" v-model="form.backgroundColorOpacity" />
+
         <InputRow label="最大点歌数" inputType="number" v-model="form.maxOrder" />
         <InputRow label="最大歌曲时长" inputType="number" v-model="form.maxDuration" />
         <InputRow label="超时限播时长" inputType="number" v-model="form.overLimit" />
@@ -96,6 +98,8 @@
 </template>
 
 <script setup>
+import InputRow from '@/components/DanmakuMusicConfigInputItem';
+import SelectRow from '@/components/DanmakuMusicConfigSelectItem';
 import { musicServer } from '@/utils/musicServer';
 import { openQrLoginWindow } from '@/utils/qrLoginMusic';
 import { addInfoDanmaku, autoGetAndSave, glabal } from '@/utils/tool';
@@ -118,7 +122,8 @@ const configDefaults = {
   songHistory: [],
   songBlackList: [],
   textColor: '#ffffff', // 默认文字颜色
-  backgroundColor: '#0202027e', // 默认背景颜色
+  backgroundColor: '#020202', // 默认背景颜色
+  backgroundColorOpacity: 125,
 };
 
 // 定义要监视的属性名称
@@ -132,6 +137,7 @@ const watchedProps = [
   'songBlackList',
   'textColor',
   'backgroundColor',
+  'backgroundColorOpacity',
 ];
 const sKey = 'musicConfig';
 const form = autoGetAndSave(sKey, configDefaults, watchedProps);
@@ -152,7 +158,7 @@ function resetTextColor() {
 }
 
 function resetBackgroundColor() {
-  form.backgroundColor = '#0202027e';
+  form.backgroundColor = '#020202';
 }
 
 watch(
@@ -165,7 +171,14 @@ watch(
 watch(
   () => form.backgroundColor,
   newVal => {
-    setBackgroudColor(newVal);
+    setBackgroudColor(newVal + parseInt(form.backgroundColorOpacity).toString(16));
+  }
+);
+
+watch(
+  () => form.backgroundColorOpacity,
+  newVal => {
+    setBackgroudColor(form.backgroundColor + parseInt(newVal).toString(16));
   }
 );
 

@@ -51,8 +51,8 @@ const formDefaults = {
   isPlaying: false,
   progressBarWidth: 0,
   showConfig: false,
-  textColor: sget('musicConfig_textColor', '#0202027e'), // 默认文字颜色
-  backgroundColor: sget('musicConfig_backgroundColor', '#ffffff'), // 默认背景颜色
+  textColor: sget('musicConfig_textColor', '#ffffff'), // 默认文字颜色
+  backgroundColor: sget('musicConfig_backgroundColor', '#0202027e'), // 默认背景颜色
 };
 
 // 定义要监视的属性名称
