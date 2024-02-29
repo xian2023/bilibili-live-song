@@ -8,6 +8,7 @@ on:
     
 permissions:
   contents: read
+  pages: write  # 确保 GitHub Token 有写入 GitHub Pages 的权限
   id-token: write  # 确保工作流程有权请求 ID 令牌
 
 jobs:
