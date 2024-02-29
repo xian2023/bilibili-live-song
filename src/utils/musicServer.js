@@ -1,53 +1,14 @@
 import { addInfoDanmaku, glabal } from '@/utils/tool';
+import { autoGet, get } from '@/utils/request';
 
 export { musicServer, qqmusicServer };
 
-/**
- * 使用 fetch API 发送 GET 请求
- *
- * @param {string} url 请求的URL
- * @param {Object} params 请求的查询参数
- * @param {Object} [config] 可选的配置对象，包含如 cookie 等信息
- * @returns {Promise<Object>} 返回解析后的JSON对象
- */
-async function customFetch(url, params, config = {}) {
-  // 将参数对象转换为URL查询字符串
-  const queryString = Object.entries(params)
+function axios(option, noCors = false) {
+  const queryString = Object.entries(option.params)
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
     .join('&');
-  const fullUrl = `${url}?${queryString}`;
-
-  try {
-    const headers = {
-      'Content-Type': 'application/json',
-      // 可以根据 config 添加更多的头部信息，例如：
-      // ...(config.headers || {}),
-    };
-
-    // 如果有cookie，则添加到headers中
-    if (config.cookie) {
-      headers['Cookie'] = config.cookie;
-    }
-
-    const response = await fetch(fullUrl, {
-      method: 'GET',
-      headers,
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json(); // 解析JSON数据
-    return data; // 返回解析后的数据
-  } catch (error) {
-    console.error('请求失败:', error);
-    throw error; // 抛出错误，允许调用者处理
-  }
-}
-
-function axios(option) {
-  return customFetch(option.url, option.params);
+  const fullUrl = `${option.url}?${queryString}`;
+  return noCors ? get(fullUrl, option) : autoGet(fullUrl, option);
 }
 
 /* 歌曲API服务 */
@@ -55,11 +16,12 @@ const musicServer = {
   // 服务器地址 gitpage 需要https服务器
   // baseUrl: "http://plugin.changsheng.space:3000",
   // baseUrl: "https://zmusic.i9mr.com",
+  //   baseUrl: 'https://docs.neteasecloudmusicapi.binaryify.com/',
   baseUrl: 'https://zm.armoe.cn',
 
   /* 发送验证码 
-        @param phone 手机号
-    */
+          @param phone 手机号
+      */
   sendCaptcha: async function (phone) {
     let data = null;
     await axios({
@@ -79,9 +41,9 @@ const musicServer = {
   },
 
   /* 校验验证码 
-        @param phone 手机号
-       @param captcha 验证码
-    */
+          @param phone 手机号
+         @param captcha 验证码
+      */
   verifyCaptcha: async function (phone, captcha) {
     let data = null;
     await axios({
@@ -102,9 +64,9 @@ const musicServer = {
   },
 
   /* 登录
-       @param phone 手机号
-       @param captcha 验证码
-     */
+         @param phone 手机号
+         @param captcha 验证码
+       */
   login: async function (phone, captcha) {
     let data = null;
     await axios({
@@ -124,8 +86,8 @@ const musicServer = {
     return data;
   },
   /*
-        游客登录
-     */
+          游客登录
+       */
   anonimousLogin: async function () {
     let data = null;
     await axios({
@@ -141,8 +103,8 @@ const musicServer = {
     return data;
   },
   /* 
-        获取二维码key
-    */
+          获取二维码key
+      */
   getQrKey: async function () {
     let unikey = null;
     await axios({
@@ -162,8 +124,8 @@ const musicServer = {
     return unikey;
   },
   /* 
-        获取二维码图片
-    */
+          获取二维码图片
+      */
   getQrPicture: async function (key) {
     let qrImgUrl = null;
     await axios({
@@ -185,8 +147,8 @@ const musicServer = {
     return qrImgUrl;
   },
   /*
-        检查二维码扫描状态
-    */
+          检查二维码扫描状态
+      */
   checkQrStatus: async function (key) {
     let data = null;
     await axios({
@@ -262,8 +224,8 @@ const musicServer = {
   },
 
   /* 搜索歌曲信息 
-        @param keyword 关键词
-    */
+          @param keyword 关键词
+      */
   getSongInfo: async function (keyword) {
     let song = null;
     await axios({
@@ -297,8 +259,8 @@ const musicServer = {
   },
 
   /* 获取歌曲链接
-        @param songId 歌曲Id
-    */
+          @param songId 歌曲Id
+      */
   getSongUrl: async function (songId) {
     let url = null;
     await axios({
@@ -323,8 +285,8 @@ const musicServer = {
   },
 
   /* 获取歌单列表 
-        @param listId 歌单Id
-    */
+          @param listId 歌单Id
+      */
   getSongList: async function (listId) {
     let songList = new Array();
     await axios({
@@ -394,22 +356,26 @@ const musicServer = {
 
 const qqmusicServer = {
   // https://github.com/jsososo/QQMusicApi
+  // https://api.aa1.cn/doc/qq-music.html
   baseUrl: 'https://zj.v.api.aa1.cn/api/qqmusic/demo.php',
   /* 搜索歌曲信息 
-        @param keyword 关键词
-    */
+          @param keyword 关键词
+      */
   getSongInfo: async function (keyword) {
     let song = null;
-    await axios({
-      method: 'get',
-      url: this.baseUrl + '',
-      params: {
-        type: 1,
-        q: keyword,
-        n: 5,
-        p: 1,
+    await axios(
+      {
+        method: 'get',
+        url: this.baseUrl + '',
+        params: {
+          type: 1,
+          q: keyword,
+          n: 5,
+          p: 1,
+        },
       },
-    })
+      true
+    )
       .then(function (resp) {
         // 获取歌曲列表
         let songs = resp.list;
@@ -461,8 +427,8 @@ const qqmusicServer = {
   // },
 
   /* 获取播放链接
-        @param    
-    */
+          @param    
+      */
   // getSongUrl: async function(songmid){
   //     let url = null;
   //     await axios({

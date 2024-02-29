@@ -1,9 +1,9 @@
 <template>
   <div class="main">
     <div class="setting">
-      <button class="setting-btn" @click="setting">设置</button>
-      <button class="setting-btn" @click="togglePlay">{{ playButtonText }}</button>
-      <button class="setting-btn" @click="playNext">下一首</button>
+      <button class="setting-btn" @click="setting" :style="buttonStyle">设置</button>
+      <button class="setting-btn" @click="togglePlay" :style="buttonStyle">{{ playButtonText }}</button>
+      <button class="setting-btn" @click="playNext" :style="buttonStyle">下一首</button>
     </div>
     <table class="orderTable" :style="{ backgroundColor: form.backgroundColor, color: form.textColor }">
       <thead>
@@ -21,7 +21,10 @@
       <div class="alertBox"></div>
       <audio ref="myAudio"></audio>
       <div class="progress">
-        <div class="progress_bar" :style="{ width: form.progressBarWidth + 'px' }">
+        <div
+          class="progress_bar"
+          :style="{ width: form.progressBarWidth + 'px', backgroundColor: form.btnBackgroundColor }"
+        >
           <i class="dot" :class="{ dot_blink: form.isPlaying }"></i>
         </div>
       </div>
@@ -37,7 +40,7 @@ import { ref, computed, onMounted, provide } from 'vue';
 
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
 import { musicServer, qqmusicServer } from '@/utils/musicServer';
-import { addInfoDanmaku, glabal, autoGetAndSave } from '@/utils/tool';
+import { addInfoDanmaku, glabal, autoGetAndSave, adjustColor } from '@/utils/tool';
 import { sget } from '@/utils/storage';
 
 const myAudio = ref(null);
@@ -51,8 +54,11 @@ const formDefaults = {
   isPlaying: false,
   progressBarWidth: 0,
   showConfig: false,
-  textColor: sget('musicConfig_textColor', '#ffffff'), // 默认文字颜色
-  backgroundColor: sget('musicConfig_backgroundColor', '#0202027e'), // 默认背景颜色
+  textColor: sget('musicConfig_textColor', ''), // 默认文字颜色
+  backgroundColor: sget('musicConfig_backgroundColor', ''), // 默认背景颜色
+  btnColor: '',
+  btnBackgroundColor: '',
+  progressBarColor: '',
 };
 
 // 定义要监视的属性名称
@@ -60,6 +66,29 @@ const watchedProps = ['orderList', 'freeList'];
 const sKey = 'music';
 const form = autoGetAndSave(sKey, formDefaults, watchedProps);
 window.playerForm = form;
+
+function setBtnColor() {
+  if (form.textColor) {
+    form.btnColor = form.textColor;
+  }
+}
+function setBtnBackgroundColor() {
+  if (form.backgroundColor) {
+    form.btnBackgroundColor = adjustColor(form.backgroundColor);
+  }
+}
+function setProgressBarColor() {
+  if (form.backgroundColor) {
+    form.progressBarColor = adjustColor(form.backgroundColor, 1);
+  }
+}
+setBtnColor();
+setBtnBackgroundColor();
+setProgressBarColor();
+const buttonStyle = computed(() => ({
+  backgroundColor: form.btnBackgroundColor,
+  color: form.btnColor,
+}));
 
 function setting() {
   form.showConfig = !form.showConfig;
@@ -254,10 +283,13 @@ onMounted(() => {
 
 function setBackgroudColor(color) {
   form.backgroundColor = color;
+  setProgressBarColor();
+  setBtnBackgroundColor();
 }
 
 function setTextColor(color) {
   form.textColor = color;
+  setBtnColor();
 }
 
 provide('playerForm', form);
@@ -296,6 +328,7 @@ html {
 .fade-leave-active {
   transition: opacity 0.5s;
 }
+
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
@@ -472,21 +505,32 @@ html {
 }
 
 .setting-btn {
-  padding: 6px 5px; /* 增加内边距，使按钮更易点击 */
-  margin: 0 5px; /* 增加按钮之间的间隔 */
-  font-size: 16px; /* 字体大小适中 */
-  background-color: #333; /* 暗色调按钮背景色 */
-  color: #fff; /* 亮色文字颜色以确保可读性 */
-  border: 1px solid #444; /* 边框颜色稍亮于背景色，但仍保持暗调 */
-  border-radius: 5px; /* 圆角边框 */
-  cursor: pointer; /* 鼠标悬停时显示指针 */
+  padding: 6px 5px;
+  /* 增加内边距，使按钮更易点击 */
+  margin: 0 5px;
+  /* 增加按钮之间的间隔 */
+  font-size: 16px;
+  /* 字体大小适中 */
+  background-color: #333;
+  /* 暗色调按钮背景色 */
+  color: #fff;
+  /* 亮色文字颜色以确保可读性 */
+  border: 1px solid #444;
+  /* 边框颜色稍亮于背景色，但仍保持暗调 */
+  border-radius: 5px;
+  /* 圆角边框 */
+  cursor: pointer;
+  /* 鼠标悬停时显示指针 */
   transition:
     background-color 0.3s,
-    transform 0.3s; /* 过渡效果 */
+    transform 0.3s;
+  /* 过渡效果 */
 
   &:hover {
-    background-color: #4a4a4a; /* 悬停时的背景色，比普通状态稍亮 */
-    transform: translateY(-2px); /* 轻微上移效果 */
+    background-color: #4a4a4a;
+    /* 悬停时的背景色，比普通状态稍亮 */
+    transform: translateY(-2px);
+    /* 轻微上移效果 */
   }
 }
 

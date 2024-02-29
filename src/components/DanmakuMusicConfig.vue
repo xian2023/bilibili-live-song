@@ -262,13 +262,13 @@ function checkOrder(order) {
   if (
     playerForm.orderList.some(value => {
       if (value.song.platform == 'qq') {
-        value.song.name == order.song.name;
+        return value.song.name == order.song.name;
       } else {
-        value.song.sid == order.song.sid;
+        return value.song.sid == order.song.sid;
       }
     })
   ) {
-    addInfoDanmaku('已经点上啦!>_<!');
+    addInfoDanmaku(order.song.name + '已经点上啦!>_<!');
     return false;
   }
   if (form.maxDuration > 0 && order.song.duration > form.maxDuration) {

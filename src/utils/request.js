@@ -1,15 +1,23 @@
 import { pick } from 'lodash';
 
 let canCORS = true;
+// const server = 'http://127.0.0.1:8787';
+const server = 'https://blc-proxy.jcms7gd2ym.workers.dev';
 
 export const setCors = bool => (canCORS = bool);
 
-export const getResp = (url, options = {}) => fetch(url, { referrer: '', referrerPolicy: 'no-referrer', ...options });
+export const getResp = (url, options = {}) =>
+  fetch(url, {
+    referrer: '',
+    headers: { 'Content-Type': 'application/json' },
+    referrerPolicy: 'no-referrer',
+    ...options,
+  });
 
 export const get = (url, options) => getResp(url, options).then(r => r.json());
 
 export const corsGetResp = (url, options) =>
-  fetch('https://blc-proxy.jcms7gd2ym.workers.dev', {
+  fetch(server, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url, ...pick(options, ['method', 'headers', 'body']) }),
