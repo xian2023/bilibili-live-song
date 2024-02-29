@@ -5,6 +5,10 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
+    
+permissions:
+  contents: read
+  id-token: write  # 确保工作流程有权请求 ID 令牌
 
 jobs:
   build-and-deploy:
