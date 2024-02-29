@@ -72,45 +72,17 @@ export default {
           live.close();
         }
       });
-
       // 弹幕
-      live.on('DANMU_MSG', ({ info: [, danmu, [uid, uname, isOwner]] }) => {
-        // handleDanmaku({ uid, uname, message, isOwner, dmV2: dm_v2 });
+      live.on('DANMU_MSG', ({ info: [, danmu, [uid, uname]] }) => {
+        console.log('收到弹幕', danmu, uname);
         // 处理点歌逻辑
-        player.value.identifyDanmuCommand({ uid, uname, danmu, isOwner });
+        player.value.identifyDanmuCommand({ uid, uname, danmu });
       });
-      live.on('LIVE_OPEN_PLATFORM_DM', ({ data: { uid, uname, msg, uface } }) => {
-        handleDanmaku({ uid, uname, message: msg, face: uface });
+      live.on('LIVE_OPEN_PLATFORM_DM', ({ data: { uid, uname, msg } }) => {
+        console.log('收到弹幕', msg, uname);
+        // 处理点歌逻辑
+        player.value.identifyDanmuCommand({ uid, uname, danmu: msg });
       });
-
-      const handleDanmaku = () => {
-        // if (isBlockedUID(uid)) {
-        //   console.log(`屏蔽了来自[${uname}]的弹幕：${message}`);
-        //   return;
-        // }
-        // const danmaku = {
-        //   type: 'message',
-        //   showFace: showFace.value,
-        //   uid,
-        //   uname,
-        //   message,
-        //   isAnchor: uid === props.anchor,
-        //   isOwner: !!isOwner,
-        //   face,
-        // };
-        // if (dmV2) {
-        //   try {
-        //     const {
-        //       user: { face },
-        //     } = decodeDmV2(dmV2);
-        //     danmaku.face = face;
-        //   } catch (error) {
-        //     console.error('[decode dmV2 error]', error);
-        //   }
-        // }
-        // if (props.delay > 0) setTimeout(() => addDanmaku(danmaku), props.delay * 1000);
-        // else addDanmaku(danmaku);
-      };
 
       // SC
       live.on(

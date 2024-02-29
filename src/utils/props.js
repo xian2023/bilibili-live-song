@@ -20,6 +20,7 @@ export const defaultProps = {
   blockUID: '',
   debug: '',
   customCss: '',
+  drive: '',
 };
 Object.freeze(defaultProps);
 

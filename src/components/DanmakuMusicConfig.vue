@@ -4,7 +4,7 @@
       <tbody>
         <InputRow
           label="网易云"
-          v-if="form.cookie == ''"
+          v-show="form.cookie == ''"
           isDisabled
           placeholder="请扫码登录"
           showButton
@@ -13,7 +13,7 @@
         />
         <InputRow
           label="网易云"
-          v-if="form.cookie !== ''"
+          v-show="form.cookie !== ''"
           v-model="form.isLogin"
           isDisabled
           placeholder="已登录"
@@ -21,6 +21,24 @@
           buttonText="退出"
           @buttonClick="loginout"
         />
+        <InputRow
+          label="文字颜色"
+          inputType="color"
+          v-model="form.textColor"
+          showButton
+          buttonText="重置"
+          @buttonClick="resetTextColor"
+        />
+
+        <InputRow
+          label="背景颜色"
+          inputType="color"
+          v-model="form.backgroundColor"
+          showButton
+          buttonText="重置"
+          @buttonClick="resetBackgroundColor"
+        />
+
         <InputRow label="最大点歌数" inputType="number" v-model="form.maxOrder" />
         <InputRow label="最大歌曲时长" inputType="number" v-model="form.maxDuration" />
         <InputRow label="超时限播时长" inputType="number" v-model="form.overLimit" />
@@ -78,17 +96,16 @@
 </template>
 
 <script setup>
-import { inject, onMounted } from 'vue';
-import InputRow from '@/components/DanmakuMusicConfigInputItem';
-import SelectRow from '@/components/DanmakuMusicConfigSelectItem';
-import { glabal, addInfoDanmaku, autoGetAndSave } from '@/utils/tool';
-import { openQrLoginWindow } from '@/utils/qrLoginMusic';
 import { musicServer } from '@/utils/musicServer';
+import { openQrLoginWindow } from '@/utils/qrLoginMusic';
+import { addInfoDanmaku, autoGetAndSave, glabal } from '@/utils/tool';
+import { inject, onMounted, watch } from 'vue';
 
 const playerForm = inject('playerForm');
+const setBackgroudColor = inject('setBackgroudColor');
+const setTextColor = inject('setTextColor');
 
 const configDefaults = {
-  qrInfo: '',
   cookie: '',
   isLogin: '',
   maxOrder: 15,
@@ -100,10 +117,22 @@ const configDefaults = {
   userBlackList: [],
   songHistory: [],
   songBlackList: [],
+  textColor: '#ffffff', // 默认文字颜色
+  backgroundColor: '#0202027e', // 默认背景颜色
 };
 
 // 定义要监视的属性名称
-const watchedProps = ['cookie', 'maxOrder', 'maxDuration', 'overLimit', 'adminList', 'userBlackList', 'songBlackList'];
+const watchedProps = [
+  'cookie',
+  'maxOrder',
+  'maxDuration',
+  'overLimit',
+  'adminList',
+  'userBlackList',
+  'songBlackList',
+  'textColor',
+  'backgroundColor',
+];
 const sKey = 'musicConfig';
 const form = autoGetAndSave(sKey, configDefaults, watchedProps);
 
@@ -117,6 +146,28 @@ function qrLogin() {
 function loginout() {
   form.cookie = '';
 }
+
+function resetTextColor() {
+  form.textColor = '#ffffff';
+}
+
+function resetBackgroundColor() {
+  form.backgroundColor = '#0202027e';
+}
+
+watch(
+  () => form.textColor,
+  newVal => {
+    setTextColor(newVal);
+  }
+);
+
+watch(
+  () => form.backgroundColor,
+  newVal => {
+    setBackgroudColor(newVal);
+  }
+);
 
 function addAdmin() {
   if (form.newAdminId) {

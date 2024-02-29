@@ -71,6 +71,10 @@ function qrCheck(unikey) {
       // 清除定时器
       clearInterval(qrCheckInterval);
       qrWindow.close();
+    } else {
+      if (qrWindow.closed) {
+        clearInterval(qrCheckInterval);
+      }
     }
   }, 3000);
 }

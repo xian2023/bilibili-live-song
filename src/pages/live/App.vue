@@ -1,7 +1,8 @@
 <template>
   <div id="custom-css" style="display: none"></div>
   <DanmakuItem v-if="errMsg" type="info" :message="errMsg" />
-  <Song v-else-if="ready" v-bind="props" :live-ws-options="liveWsOptions" />
+  <Live v-else-if="ready && drive == 'Live'" v-bind="props" :live-ws-options="liveWsOptions" />
+  <Song v-else-if="ready && drive == 'Song'" v-bind="props" :live-ws-options="liveWsOptions" />
 </template>
 
 <script>
@@ -11,10 +12,11 @@ import { setCors, autoGet, corsGet } from '@/utils/request';
 import { getOpenData } from '@/utils/biliOpen';
 
 import Song from '@/components/Song';
+import Live from '@/components/Live';
 import DanmakuItem from '@/components/DanmakuItem';
 
 export default defineComponent({
-  components: { Song, DanmakuItem },
+  components: { Song, Live, DanmakuItem },
   setup() {
     const onHashChange = () => window.location.reload();
     window.addEventListener('hashchange', onHashChange);
@@ -36,6 +38,7 @@ export default defineComponent({
     setCors(canCORS);
 
     const ready = ref(false);
+    const drive = ref(props.drive);
     const errMsg = ref('');
 
     if (props.auth === 'open') {
@@ -129,7 +132,7 @@ export default defineComponent({
       });
     }
 
-    return { props, ready, errMsg, liveWsOptions };
+    return { props, ready, drive, errMsg, liveWsOptions };
   },
 });
 </script>

@@ -5,7 +5,7 @@
       <button class="setting-btn" @click="togglePlay">{{ playButtonText }}</button>
       <button class="setting-btn" @click="playNext">下一首</button>
     </div>
-    <table class="orderTable">
+    <table class="orderTable" :style="{ backgroundColor: form.backgroundColor, color: form.textColor }">
       <thead>
         <th>歌名</th>
         <th>歌手</th>
@@ -26,7 +26,9 @@
         </div>
       </div>
     </table>
-    <DanmakuMusicConfig ref="configComp" v-show="form.showConfig === true" />
+    <transition name="fade">
+      <DanmakuMusicConfig ref="configComp" v-show="form.showConfig === true" />
+    </transition>
   </div>
 </template>
 
@@ -36,6 +38,7 @@ import { ref, computed, onMounted, provide } from 'vue';
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
 import { musicServer, qqmusicServer } from '@/utils/musicServer';
 import { addInfoDanmaku, glabal, autoGetAndSave } from '@/utils/tool';
+import { sget } from '@/utils/storage';
 
 const myAudio = ref(null);
 const configComp = ref(null);
@@ -48,6 +51,8 @@ const formDefaults = {
   isPlaying: false,
   progressBarWidth: 0,
   showConfig: false,
+  textColor: sget('musicConfig_textColor', '#0202027e'), // 默认文字颜色
+  backgroundColor: sget('musicConfig_backgroundColor', '#ffffff'), // 默认背景颜色
 };
 
 // 定义要监视的属性名称
@@ -247,10 +252,20 @@ onMounted(() => {
   });
 });
 
+function setBackgroudColor(color) {
+  form.backgroundColor = color;
+}
+
+function setTextColor(color) {
+  form.textColor = color;
+}
+
 provide('playerForm', form);
 provide('play', play);
 provide('playNext', playNext);
 provide('addOrder', addOrder);
+provide('setBackgroudColor', setBackgroudColor);
+provide('setTextColor', setTextColor);
 
 defineExpose({
   form,
@@ -276,6 +291,16 @@ html {
   justify-content: center;
 }
 
+/* 定义过渡类 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 /* 二维码 */
 #qrImg {
   width: 200px;
@@ -293,12 +318,12 @@ html {
 
 .orderTable {
   width: 320px;
-  margin-top: 60px;
+  margin-top: 24px;
   border-radius: 10px;
   margin-left: auto;
   margin-right: auto;
   background: #0202027e;
-  box-shadow: 0px 0px 6px #000000;
+  box-shadow: 0px 0px 6px #8c7676;
   table-layout: fixed;
   position: relative;
   z-index: 1;
@@ -417,24 +442,6 @@ html {
 }
 
 /* 配置按钮样式 */
-// .setting {
-//   display: flex;
-//   flex-wrap: wrap;
-//   flex-direction: row;
-//   align-items: center;
-//   justify-content: space-between;
-//   position: absolute;
-//   left: 50%;
-//   transform: translateX(-50%);
-//   width: 200px;
-//   /* 根据需要调整总宽度 */
-//   opacity: 0;
-//   visibility: hidden;
-//   transition:
-//     opacity 0.5s,
-//     visibility 0.5s;
-//   z-index: 999;
-// }
 .setting {
   position: absolute;
   top: 10px; // 或根据需要调整
@@ -444,6 +451,11 @@ html {
   display: flex;
   justify-content: center;
   align-items: center;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.5s,
+    visibility 0.5s;
 }
 
 .main {
@@ -460,21 +472,21 @@ html {
 }
 
 .setting-btn {
-  padding: 6px 5px; // 增加内边距，使按钮更易点击
-  margin: 0 5px; // 增加按钮之间的间隔
-  font-size: 16px; // 字体大小适中
-  background-color: #f2f2f2; // 按钮背景色
-  color: black; // 文字颜色
-  border: 1px solid #ccc; // 边框颜色
-  border-radius: 5px; // 圆角边框
-  cursor: pointer; // 鼠标悬停时显示指针
+  padding: 6px 5px; /* 增加内边距，使按钮更易点击 */
+  margin: 0 5px; /* 增加按钮之间的间隔 */
+  font-size: 16px; /* 字体大小适中 */
+  background-color: #333; /* 暗色调按钮背景色 */
+  color: #fff; /* 亮色文字颜色以确保可读性 */
+  border: 1px solid #444; /* 边框颜色稍亮于背景色，但仍保持暗调 */
+  border-radius: 5px; /* 圆角边框 */
+  cursor: pointer; /* 鼠标悬停时显示指针 */
   transition:
     background-color 0.3s,
-    transform 0.3s; // 过渡效果
+    transform 0.3s; /* 过渡效果 */
 
   &:hover {
-    background-color: #e9e9e9; // 悬停时的背景色
-    transform: translateY(-2px); // 轻微上移效果
+    background-color: #4a4a4a; /* 悬停时的背景色，比普通状态稍亮 */
+    transform: translateY(-2px); /* 轻微上移效果 */
   }
 }
 
@@ -488,7 +500,7 @@ html {
   background: rgb(114, 114, 114);
 
   position: absolute;
-  top: 60px;
+  top: 74px;
   left: 50%;
   transform: translate(-50%, 0);
   display: flex;

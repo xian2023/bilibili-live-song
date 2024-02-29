@@ -10,7 +10,8 @@
         height="30px"
         style="vertical-align: bottom"
       ></iframe>
-      <button class="btn btn-primary" type="button" :disabled="!canGo" @click="goLive">Go!</button>
+      <button class="btn btn-primary" type="button" :disabled="!canGo" @click="goLive">GoLive!</button>
+      <button class="btn btn-primary" type="button" :disabled="!canGo" @click="goSong">GoSong!</button>
       <button class="btn" :class="copyLinkClass" type="button" :disabled="!canGo" @click="copyLink">
         {{ copyLinkText }}
       </button>
@@ -196,6 +197,12 @@ export default defineComponent({
           }
         }
       });
+
+      if (processedCookies.length < checkCookies.length) {
+        console.log('cookie 数据缺失，请在F12网页请求里复制完整的cookie');
+        return '';
+      }
+
       // 使用;将处理后的cookie数组重新拼接成字符串
       return processedCookies.join('; ');
     };
@@ -266,10 +273,21 @@ export default defineComponent({
       });
     }
 
+    function go() {
+      window.location.href = `live.html#${qss(getFinalForm())}`;
+    }
+
     return {
       form,
       canGo,
-      goLive: () => (window.location.href = `live.html#${qss(getFinalForm())}`),
+      goLive: () => {
+        form.drive = 'Live';
+        go();
+      },
+      goSong: () => {
+        form.drive = 'Song';
+        go();
+      },
       copyLink,
       copyLinkClass,
       copyLinkText,
