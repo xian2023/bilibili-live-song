@@ -91,6 +91,18 @@ function getShallowRGB(maxColorObject, R, G, B, threshold = 40, offset = 10, amo
       ];
     }
   }
+
+  for (const rgb of result) {
+    for (let i = 0; i < rgb.length; i++) {
+      const value = rgb[i];
+      if (value < 0) {
+        rgb[i] = 0;
+      } else if (value > 255) {
+        rgb[i] = 255;
+      }
+    }
+  }
+
   return result;
 }
 //找到最大的RGB

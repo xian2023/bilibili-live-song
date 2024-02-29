@@ -61,6 +61,11 @@ const formDefaults = {
   progressBarColor: '',
 };
 
+if (formDefaults.backgroundColor) {
+  const opacity = sget('musicConfig_backgroundColorOpacity', '255');
+  formDefaults.backgroundColor = formDefaults.backgroundColor + parseInt(opacity).toString(16);
+}
+
 // 定义要监视的属性名称
 const watchedProps = ['orderList', 'freeList'];
 const sKey = 'music';
@@ -510,6 +515,7 @@ html {
   margin: 0 5px;
   /* 增加按钮之间的间隔 */
   font-size: 16px;
+  font-weight: bold;
   /* 字体大小适中 */
   background-color: #333;
   /* 暗色调按钮背景色 */
