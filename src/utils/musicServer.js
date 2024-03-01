@@ -388,6 +388,8 @@ const qqmusicServer = {
             sartist: songs[0].singer,
             url: songs[0].url,
             duration: 1,
+            time: Date.now(),
+            keyword: keyword,
           };
         }
       })

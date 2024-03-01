@@ -11,14 +11,24 @@
         <th>歌手</th>
         <th>点歌人</th>
       </thead>
-      <tbody id="songList">
-        <tr v-for="order in form.orderList" :key="order.song.sid">
-          <td>{{ order.song.sname }}</td>
-          <td>{{ order.song.sartist }}</td>
-          <td>{{ order.uname }}</td>
-        </tr>
-      </tbody>
-      <div class="alertBox"></div>
+      <draggable
+        :list="form.orderList"
+        handle=".move"
+        animation="300"
+        @start="onStart"
+        @end="onEnd"
+        tag="tbody"
+        item-key="id"
+      >
+        <template #item="{ element }">
+          <tr class="move" :key="'id'">
+            <td>{{ element.song.sname }}</td>
+            <td>{{ element.song.sartist }}</td>
+            <td>{{ element.uname }}</td>
+          </tr>
+        </template>
+      </draggable>
+      <!-- <div class="alertBox"></div> -->
       <audio ref="myAudio"></audio>
       <div class="progress">
         <div
@@ -29,6 +39,7 @@
         </div>
       </div>
     </table>
+
     <transition name="fade">
       <DanmakuMusicConfig ref="configComp" v-show="form.showConfig === true" />
     </transition>
@@ -36,7 +47,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, provide } from 'vue';
+import { ref, computed, onMounted, provide, reactive } from 'vue';
+import draggable from 'vuedraggable';
 
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
 import { musicServer, qqmusicServer } from '@/utils/musicServer';
@@ -59,6 +71,7 @@ const formDefaults = {
   btnColor: '',
   btnBackgroundColor: '',
   progressBarColor: '',
+  headers: ['id', 'name', 'intro'],
 };
 
 if (formDefaults.backgroundColor) {
@@ -71,6 +84,23 @@ const watchedProps = ['orderList', 'freeList'];
 const sKey = 'music';
 const form = autoGetAndSave(sKey, formDefaults, watchedProps);
 window.playerForm = form;
+
+let firstSong = null;
+//拖拽开始的事件
+const onStart = () => {
+  console.log('开始拖拽');
+  firstSong = form.orderList[0];
+};
+
+//拖拽结束的事件
+const onEnd = () => {
+  console.log('结束拖拽');
+  // 如果第一首歌变了 删除旧的第一首 播放新的第一首
+  if (form.isPlaying && firstSong != form.orderList[0]) {
+    play(form.orderList[0].song);
+    form.orderList.splice(1, 1);
+  }
+};
 
 function setBtnColor() {
   if (form.textColor) {
@@ -132,8 +162,13 @@ async function play(song) {
   // 根据歌曲信息，获取歌曲链接
   let url = null;
   if (song.platform && song.platform == 'qq') {
-    url = song.url;
-    // url = await qqmusicServer.getSongUrl(song.sid);
+    // 歌曲链接会过期 超时太久的 60s 播放的时候重新获取一次
+    if (Date.now() - song.time > 60 * 1e3) {
+      const info = await qqmusicServer.getSongInfo(song.keyword);
+      url = info.url;
+    } else {
+      url = song.url;
+    }
   } else {
     url = await musicServer.getSongUrl(song.sid);
   }
@@ -538,6 +573,28 @@ html {
     transform: translateY(-2px);
     /* 轻微上移效果 */
   }
+}
+
+.move {
+  cursor: move;
+}
+
+/* 被拖拽的行内的单元格的样式 */
+.sortable-chosen td {
+  border-top: 2px dashed #3498db;
+  /* 顶部蓝色虚线边框 */
+  border-bottom: 2px dashed #3498db;
+  /* 底部蓝色虚线边框 */
+  // background-color: #f2f2f2; /* 轻灰色背景 */
+}
+
+/* 占位符行内的单元格的样式 */
+.sortable-placeholder td {
+  border-top: 2px solid #95a5a6;
+  /* 顶部灰色实线边框 */
+  border-bottom: 2px solid #95a5a6;
+  /* 底部灰色实线边框 */
+  // background-color: #ecf0f1; /* 浅灰蓝色背景 */
 }
 
 /* 配置页面样式 */

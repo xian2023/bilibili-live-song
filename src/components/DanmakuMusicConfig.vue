@@ -123,7 +123,7 @@ const configDefaults = {
   songBlackList: [],
   textColor: '#ffffff', // 默认文字颜色
   backgroundColor: '#020202', // 默认背景颜色
-  backgroundColorOpacity: 125,
+  backgroundColorOpacity: 255,
 };
 
 // 定义要监视的属性名称
