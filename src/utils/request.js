@@ -2,7 +2,8 @@ import { pick } from 'lodash';
 
 let canCORS = true;
 // const server = 'http://127.0.0.1:8787';
-const server = 'https://blc-proxy.jcms7gd2ym.workers.dev';
+// const server = 'https://blc-proxy.jcms7gd2ym.workers.dev';
+const server = 'https://xian2024.cloud/blc-proxy';
 
 export const setCors = bool => (canCORS = bool);
 
