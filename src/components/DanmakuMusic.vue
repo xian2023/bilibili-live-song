@@ -47,7 +47,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, provide, reactive } from 'vue';
+import { ref, computed, onMounted, provide } from 'vue';
 import draggable from 'vuedraggable';
 
 import DanmakuMusicConfig from '@/components/DanmakuMusicConfig';
